@@ -8,6 +8,10 @@ namespace MuvluvMod
     {
         void Update()
         {
+            if (Keyboard.current.f2Key.wasPressedThisFrame)
+            {
+                Config.Translation.Value = !Config.Translation.Value;
+            }
         }
 
     }
