@@ -1,4 +1,5 @@
 ﻿using Assets.Api.Client;
+using Assets.Battle.Overseers;
 using Assets.CustomRendererFeatures;
 using Assets.GameUi.Scenario;
 using Assets.GameUi.Scenario.Animation;
@@ -50,6 +51,13 @@ namespace MuvluvMod
             {
                 __instance.passSettings.Keyword = "114514";
             }
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(HudOverseer), nameof(HudOverseer.SetSkipAvaiability))]
+        public static void EnableSkipButton(ref bool available)
+        {
+            available = true;
         }
 
         // 翻译加载
