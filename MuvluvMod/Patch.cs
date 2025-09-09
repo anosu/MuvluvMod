@@ -26,21 +26,12 @@ namespace MuvluvMod
 {
     public class Patch
     {
-        static readonly TimeZoneInfo TZ = TimeZoneInfo.FindSystemTimeZoneByIdWinRTFallback("Tokyo Standard Time");
-
         public static long sceneId;
         public static AdventureTitle adventureTitle;
 
         public static void Initialize()
         {
             Harmony.CreateAndPatchAll(typeof(Patch));
-        }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(TimeZoneInfo), nameof(TimeZoneInfo.Local), MethodType.Getter)]
-        public static void SetTimeZoneInfo(ref TimeZoneInfo __result)
-        {
-            __result = TZ;
         }
 
         [HarmonyPostfix]
@@ -70,7 +61,6 @@ namespace MuvluvMod
             if (!Config.Translation.Value) return;
 
             sceneId = sceneMasterId;
-            if (Translation.IsTranslated) return;
 
             Translation.GetScenarioTranslationAsync(sceneMasterId).Wait();
 
