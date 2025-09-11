@@ -1,6 +1,7 @@
 ﻿using Assets.Api.Client;
 using Assets.Battle.Overseers;
 using Assets.CustomRendererFeatures;
+using Assets.GameUi.Externals;
 using Assets.GameUi.Scenario;
 using Assets.GameUi.Scenario.Animation;
 using Assets.GameUi.Scenario.Choice;
@@ -28,6 +29,7 @@ namespace MuvluvMod
     {
         public static long sceneId;
         public static AdventureTitle adventureTitle;
+        public static bool isPlayingScenario = false;
 
         public static void Initialize()
         {
@@ -48,7 +50,31 @@ namespace MuvluvMod
         [HarmonyPatch(typeof(HudOverseer), nameof(HudOverseer.SetSkipAvaiability))]
         public static void EnableSkipButton(ref bool available)
         {
-            available = true;
+            if (Config.EnableSkipButton.Value)
+            {
+                available = true;
+            }
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.StopVoice))]
+        public static bool DisableStopVoice()
+        {
+            return Config.VoiceInterruption.Value || !isPlayingScenario;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(ScenarioController), nameof(ScenarioController.Refresh), [])]
+        public static void SetIsPlayingScenario()
+        {
+            isPlayingScenario = true;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(ScenarioController), nameof(ScenarioController.Leave))]
+        public static void SetIsNotPlayingScenario()
+        {
+            isPlayingScenario = false;
         }
 
         // 翻译加载
