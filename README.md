@@ -20,8 +20,15 @@
 
 -   当插件初始化完成并且游戏正常启动后（控制台窗口没有出现红色的报错），那么此时应该已经可以正常使用了。插件首次运行之后会在`BepInEx\config`目录下生成 BepInEx 和 mod 本身的配置文件，分别为`BepInEx.cfg`和`MuvluvMod.cfg`，如果你需要修改插件的设置（如关闭翻译），请修改`MuvluvMod.cfg`之后重新启动游戏。如果你需要隐藏控制台窗口，请在`BepInEx.cfg`中找到`[Logging.Console]`选项，并将`Enabled`的值设置为`false`
 
+### 快捷键
+
+-   `F2`: 开启/关闭翻译
+-   `F3`: 开启/关闭始终启用跳过按钮
+-   `F4`: 开启/关闭语音中断
+
 ### 群聊
 
--   QQ 群: [660247178](https://qm.qq.com/q/N1GMXxIBCG)
+-   QQ 群: [660247178](https://qm.qq.com/q/N1GMXxIBCG)（已满）
+-   QQ 群 2: [485328718](https://qm.qq.com/q/rCHcfhnW6G)
 
 有问题在群里反馈
