@@ -91,9 +91,11 @@ namespace MuvluvMod
         // 翻译加载
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EpisodeService), nameof(EpisodeService.DownloadSceneFrameMasters))]
-        public static void LoadTranslation(long sceneMasterId)
+        public static void LoadTranslation(EpisodeService __instance, long sceneMasterId)
         {
             Plugin.Log.LogInfo($"Scene: {sceneMasterId}");
+
+            __instance.sceneFrameMastersCache.Remove(sceneMasterId);
 
             if (!Config.Translation.Value) return;
 
