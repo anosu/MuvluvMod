@@ -20,6 +20,10 @@ namespace MuvluvMod
             {
                 Config.VoiceInterruption.Value = !Config.VoiceInterruption.Value;
             }
+            if (Keyboard.current.f5Key.wasPressedThisFrame)
+            {
+                Config.AutoSkipBattle.Value = !Config.AutoSkipBattle.Value;
+            }
         }
 
     }

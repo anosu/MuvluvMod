@@ -78,6 +78,16 @@ namespace MuvluvMod
             isPlayingScenario = false;
         }
 
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(HudOverseer), nameof(HudOverseer.SetHudActive))]
+        public static void AutoClickSkipButton(HudOverseer __instance, bool active)
+        {
+            if (Config.AutoSkipBattle.Value && active)
+            {
+                __instance.ProcessSkipButtonClick();
+            }
+        }
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(IzanamiNetworkUtilizationManager), nameof(IzanamiNetworkUtilizationManager.SendRequest))]
         public static void LogSceneRequestUrl(IzanamiNetworkUtilizationManager.RequestContext requestContext)
