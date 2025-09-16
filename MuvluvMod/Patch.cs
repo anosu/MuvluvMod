@@ -1,5 +1,4 @@
 ﻿using Assets.Api.Client;
-using Assets.Api.Client.ConnectionManager;
 using Assets.Battle.Overseers;
 using Assets.CustomRendererFeatures;
 using Assets.GameUi.Externals;
@@ -21,7 +20,6 @@ using System.Text.Json.Nodes;
 using TMPro;
 using UniRx;
 using UniRx.Triggers;
-using Unity.Cinemachine;
 using UnityEngine;
 
 namespace MuvluvMod
@@ -37,6 +35,7 @@ namespace MuvluvMod
             Harmony.CreateAndPatchAll(typeof(Patch));
         }
 
+        // 去马赛克
         [HarmonyPostfix]
         [HarmonyPatch(typeof(MosaicRendererFeature), nameof(MosaicRendererFeature.Create))]
         public static void RemoveMosaic(MosaicRendererFeature __instance)
@@ -47,6 +46,7 @@ namespace MuvluvMod
             }
         }
 
+        // 开启跳过按钮/自动跳过战斗
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HudOverseer), nameof(HudOverseer.SetSkipAvaiability))]
         public static void EnableSkipButton(HudOverseer __instance, ref bool available)
@@ -61,6 +61,7 @@ namespace MuvluvMod
             }
         }
 
+        // 语音不中断
         [HarmonyPrefix]
         [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.StopVoice))]
         public static bool DisableStopVoice()
@@ -68,6 +69,7 @@ namespace MuvluvMod
             return Config.VoiceInterruption.Value || !isPlayingScenario;
         }
 
+        // 记录剧情开始播放
         [HarmonyPrefix]
         [HarmonyPatch(typeof(ScenarioController), nameof(ScenarioController.Refresh), [])]
         public static void SetIsPlayingScenario()
@@ -75,22 +77,13 @@ namespace MuvluvMod
             isPlayingScenario = true;
         }
 
+        // 记录剧情结束播放
         [HarmonyPrefix]
         [HarmonyPatch(typeof(ScenarioController), nameof(ScenarioController.Leave))]
         public static void SetIsNotPlayingScenario()
         {
             isPlayingScenario = false;
         }
-
-        //[HarmonyPostfix]
-        //[HarmonyPatch(typeof(HudOverseer), nameof(HudOverseer.SetHudActive))]
-        //public static void AutoClickSkipButton(HudOverseer __instance, bool active)
-        //{
-        //    if (Config.AutoSkipBattle.Value && active)
-        //    {
-        //        __instance.ProcessSkipButtonClick();
-        //    }
-        //}
 
         // 翻译加载
         [HarmonyPrefix]
@@ -231,7 +224,7 @@ namespace MuvluvMod
             __instance.sentenceText.tmpText.fontMaterial = Translation.outlineMaterial;
         }
 
-        // 修正行距
+        // 修正行距 TODO: 修正由于剧情播放结束后没有恢复原行距导致的主线中剧情结尾部分会有原字体行距异常
         [HarmonyPostfix]
         [HarmonyPatch(typeof(ScenarioTextComponent), nameof(ScenarioTextComponent.ApplySentence))]
         public static void FixLineSpacing(ScenarioTextComponent __instance)
