@@ -11,7 +11,6 @@ using Assets.GameUi.Scenario.Text;
 using Assets.GameUi.Service;
 using Assets.VisualEffectData.VisualEffects;
 using BepInEx.Unity.IL2CPP.Utils;
-using Best.HTTP;
 using Cysharp.Threading.Tasks;
 using DMM.Games.Net.Unity;
 using HarmonyLib;

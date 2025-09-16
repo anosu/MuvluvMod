@@ -47,6 +47,10 @@ namespace MuvluvMod
                 {
                     return await response.Content.ReadFromJsonAsync<T>();
                 }
+                else
+                {
+                    Plugin.Log.LogWarning($"GET {url} {response.StatusCode}");
+                }
             }
             catch (Exception e)
             {
@@ -140,7 +144,7 @@ namespace MuvluvMod
             }
             else
             {
-                Plugin.Log.LogWarning($"Translations loaded failed: {sceneId}");
+                Plugin.Log.LogWarning($"Scenario translations load failed: {sceneId}");
             }
         }
 
