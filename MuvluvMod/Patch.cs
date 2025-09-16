@@ -21,6 +21,7 @@ using System.Text.Json.Nodes;
 using TMPro;
 using UniRx;
 using UniRx.Triggers;
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace MuvluvMod
@@ -48,11 +49,15 @@ namespace MuvluvMod
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(HudOverseer), nameof(HudOverseer.SetSkipAvaiability))]
-        public static void EnableSkipButton(ref bool available)
+        public static void EnableSkipButton(HudOverseer __instance, ref bool available)
         {
             if (Config.EnableSkipButton.Value)
             {
                 available = true;
+            }
+            if (Config.AutoSkipBattle.Value)
+            {
+                __instance.ProcessSkipButtonClick();
             }
         }
 
@@ -77,15 +82,15 @@ namespace MuvluvMod
             isPlayingScenario = false;
         }
 
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(HudOverseer), nameof(HudOverseer.SetHudActive))]
-        public static void AutoClickSkipButton(HudOverseer __instance, bool active)
-        {
-            if (Config.AutoSkipBattle.Value && active)
-            {
-                __instance.ProcessSkipButtonClick();
-            }
-        }
+        //[HarmonyPostfix]
+        //[HarmonyPatch(typeof(HudOverseer), nameof(HudOverseer.SetHudActive))]
+        //public static void AutoClickSkipButton(HudOverseer __instance, bool active)
+        //{
+        //    if (Config.AutoSkipBattle.Value && active)
+        //    {
+        //        __instance.ProcessSkipButtonClick();
+        //    }
+        //}
 
         // 翻译加载
         [HarmonyPrefix]
