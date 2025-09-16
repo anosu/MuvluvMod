@@ -87,16 +87,6 @@ namespace MuvluvMod
             }
         }
 
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(IzanamiNetworkUtilizationManager), nameof(IzanamiNetworkUtilizationManager.SendRequest))]
-        public static void LogSceneRequestUrl(IzanamiNetworkUtilizationManager.RequestContext requestContext)
-        {
-            if (requestContext.Url.StartsWith("https://assets.muvluv-girls-garden.com/production-private/master-data"))
-            {
-                Plugin.Log.LogInfo($"URL: {requestContext.Url}");
-            }
-        }
-
         // 翻译加载
         [HarmonyPrefix]
         [HarmonyPatch(typeof(EpisodeService), nameof(EpisodeService.DownloadSceneFrameMasters))]
