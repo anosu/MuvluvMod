@@ -239,7 +239,7 @@ namespace MuvluvMod
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(ScenarioHistoryCell), nameof(ScenarioHistoryCell.ApplyText))]
-        public static void ReplaceHistoryFont(ref string phrase, bool isAnswer)
+        public static void ReplaceHistoryChoice(ref string phrase, bool isAnswer)
         {
             if (!Config.Translation.Value || !Translation.IsTranslated) return;
 
