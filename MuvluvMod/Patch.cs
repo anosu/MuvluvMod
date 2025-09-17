@@ -237,6 +237,18 @@ namespace MuvluvMod
             }
         }
 
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(ScenarioHistoryCell), nameof(ScenarioHistoryCell.ApplyText))]
+        public static void ReplaceHistoryFont(ref string phrase, bool isAnswer)
+        {
+            if (!Config.Translation.Value || !Translation.IsTranslated) return;
+
+            if (isAnswer && Translation.scenes[sceneId].TryGetValue(phrase, out string text))
+            {
+                phrase = text;
+            }
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(ScenarioHistoryCell), nameof(ScenarioHistoryCell.ApplySync))]
         public static void ReplaceHistoryFont(ScenarioHistoryCell __instance)
