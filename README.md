@@ -1,37 +1,79 @@
 # MuvluvMod
 
-本仓库的文件主要用于 **Windows 平台 DMM Game Player 端**
+## [English](README_EN.md)
 
-### 插件功能
+本仓库的文件适用于 **Windows 平台 DMM Game Player 版本**的游戏客户端
 
--   为游戏提供剧情翻译，包括主线活动角色剧情
+---
+
+## 功能特性
+
+-   提供剧情翻译（包括主线与活动角色剧情）
 -   去除游戏内动态添加的马赛克
--   总是启用跳过按钮
--   剧情语音不中断
+-   始终启用跳过按钮
+-   剧情语音不中断播放
 -   自动跳过战斗
 
-### 使用方法
+---
 
--   首先确保你已经安装了游戏的客户端（DMM Game Player 版）并且知道游戏的可执行文件（`muv_luv_girlsgardenx_cl.exe`）所在的文件夹路径
+## 使用方法
 
--   从本仓库的[Releases](https://github.com/anosu/MuvluvMod/releases)页面（← 如果你不知道在哪儿那就直接点这里）找到最新发布的版本（带有绿色的`Latest`标识），展开`Assets`选项卡（默认应该就是展开的），下载名为`MuvluvMod.7z`或类似的压缩包，不要下载`Source code`，那是源码
+### 1. 准备工作
 
--   将下载的压缩包解压你会得到`winhttp.dll`，`BepInEx`等文件和文件夹，将所有这些文件复制（或直接解压）到与游戏的可执行文件（`muv_luv_girlsgardenx_cl.exe`）相同的目录，你的`BepInEx`文件夹、`winhttp.dll`文件以及`muv_luv_girlsgardenx_cl.exe`应该在同一个目录下。如果你之前下载过旧版本可以先将旧版本删除或者直接全部覆盖（如果后面没问题的话）
+-   确保已安装游戏的客户端（DMM Game Player 版）
+-   确认游戏可执行文件 `muv_luv_girlsgardenx_cl.exe` 所在目录
 
--   正常启动游戏。注意：首次启动或者游戏更新之后，插件会有一个初始化的过程，此时你只会看到一个控制台窗口，等待其初始化完成游戏才会正常启动，此过程中 BepInEx 会从其官网下载对应游戏 Unity 版本的补丁来对游戏进行修改以支持插件的运行，如果你使用 ACGP 之类的加速器并且在此过程中看到了控制台窗口出现了红色的报错那么说明你可能无法直连其官网，请打开梯子来解决此问题。
+### 2. 下载插件
 
--   当插件初始化完成并且游戏正常启动后（控制台窗口没有出现红色的报错），那么此时应该已经可以正常使用了。插件首次运行之后会在`BepInEx\config`目录下生成 BepInEx 和 mod 本身的配置文件，分别为`BepInEx.cfg`和`MuvluvMod.cfg`，如果你需要修改插件的设置（如关闭翻译），请修改`MuvluvMod.cfg`之后重新启动游戏。如果你需要隐藏控制台窗口，请在`BepInEx.cfg`中找到`[Logging.Console]`选项，并将`Enabled`的值设置为`false`
+-   前往 [Releases 页面](https://github.com/anosu/MuvluvMod/releases) 下载最新版本（带绿色 `Latest` 标记）
+-   展开 `Assets`，下载 `MuvluvMod.7z`（不要下载 `Source code`，那是源码）
 
-### 快捷键
+### 3. 安装插件
+
+-   将压缩包解压，得到 `winhttp.dll`、`BepInEx` 文件夹等内容
+-   将它们复制到与 `muv_luv_girlsgardenx_cl.exe` 相同的目录下
+-   你的`winhttp.dll`、`BepInEx`文件夹和`muv_luv_girlsgardenx_cl.exe`应当处于同一目录下
+-   若已存在旧版本，可以先删除或直接覆盖
+
+### 4. 启动游戏
+
+-   正常启动游戏：我是指从 DMM Game Player 启动或者从第三方 DMM 启动器启动，**而不是直接双击`muv_luv_girlsgardenx_cl.exe`启动！！！**
+-   第一次启动或游戏更新后，会出现控制台窗口并执行初始化
+-   初始化过程中，BepInEx 会从官网获取对应 Unity 版本的补丁
+-   若在第一次启动初始化时控制台出现红色报错（常见于无法直连 BepInEx 官网），请使用代理/梯子而不是加速器，确保你能够正常访问[https://unity.bepinex.dev/libraries/](https://unity.bepinex.dev/libraries/)
+-   初始化完成后，游戏会正常启动
+
+### 5. 配置文件
+
+-   首次运行后会在 `BepInEx\config` 文件夹生成：
+    -   `BepInEx.cfg`（BepInEx 配置）
+    -   `MuvluvMod.cfg`（插件配置，可用于关闭翻译等）
+-   修改配置后需重启游戏生效
+-   如需隐藏控制台窗口，请在 `BepInEx.cfg` 的 `[Logging.Console]` 中将 `Enabled` 设置为 `false`
+
+---
+
+## 快捷键
 
 -   `F2`: 开启/关闭翻译
 -   `F3`: 开启/关闭始终启用跳过按钮
 -   `F4`: 开启/关闭语音中断
 -   `F5`: 开启/关闭自动跳过战斗
 
-### 群聊
+---
 
--   QQ 群: [660247178](https://qm.qq.com/q/N1GMXxIBCG)（已满）
+## 交流群
+
+-   QQ 群 1: [660247178](https://qm.qq.com/q/N1GMXxIBCG)（已满）
 -   QQ 群 2: [485328718](https://qm.qq.com/q/rCHcfhnW6G)
 
-有问题在群里反馈
+如有问题，请在群内反馈
+
+---
+
+## 免责声明
+
+-   本插件为 **第三方爱好者作品**，与官方开发商及发行商无任何关联
+-   本插件仅供学习与技术研究使用，请在 **合法合规** 的前提下使用
+-   使用本插件可能会影响游戏的正常运行，作者不对因使用本插件导致的任何问题（包括但不限于封号、数据丢失、程序崩溃）负责
+-   下载与使用本插件即视为您已同意自行承担相关风险
