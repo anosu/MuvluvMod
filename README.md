@@ -64,8 +64,7 @@
 
 ## 交流群
 
--   QQ 群: [1004564126](https://qm.qq.com/q/LsQM5D27qm)
--   想要为汉化添砖加瓦或者反馈翻译问题的加这个群：[995382836](https://qm.qq.com/q/Crd9RzMQcS)（不是游戏玩法交流群）
+-   QQ 群: [1101263618](https://qm.qq.com/q/DrwN4ruxx0)（更新于2026.4.20）
 
 如有问题，请在群内反馈或者此仓库提交 Issues
 
