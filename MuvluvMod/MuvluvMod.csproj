@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <GameDir>E:\Games\DMM GAMES\muv_luv_girlsgardenx_cl</GameDir>
+    <!-- Per-user path. Set GameDir to override it on another machine. -->
+    <GameDir Condition="'$(GameDir)' == ''">E:\Games\DMM GAMES\muv_luv_girlsgardenx_cl</GameDir>
     <Authors>Jitsu</Authors>
   </PropertyGroup>
 
@@ -18,7 +19,7 @@
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
     <RootNamespace>MuvluvMod</RootNamespace>
-    <BaseOutputPath>$(GameDir)\BepInEx\plugins</BaseOutputPath>
+    <BaseOutputPath>$(GameDir)\BepInEx\plugins\$(Product)</BaseOutputPath>
     <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
   </PropertyGroup>
 
@@ -30,11 +31,21 @@
     <DebugType>none</DebugType>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Resolve Utility.dll from the sibling project or the deployed plugin directory. -->
+    <UtilityDll Condition="Exists('..\..\Utility\Utility\bin\Release\net6.0\Utility.dll')">..\..\Utility\Utility\bin\Release\net6.0\Utility.dll</UtilityDll>
+    <UtilityDll Condition="'$(UtilityDll)' == '' And Exists('$(BaseOutputPath)\Utility.dll')">$(BaseOutputPath)\Utility.dll</UtilityDll>
+  </PropertyGroup>
+
   <ItemGroup>
     <GameDlls Include="$(GameDir)\BepInEx\interop\*.dll">
     </GameDlls>
     <Reference Include="@(GameDlls)">
       <Private>false</Private>
+    </Reference>
+    <Reference Include="Utility">
+      <HintPath>$(UtilityDll)</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
 
