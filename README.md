@@ -52,6 +52,12 @@
 - 具体配置项自行查看配置文件内相关说明
 - 如需隐藏控制台窗口，请在 `BepInEx.cfg` 的 `[Logging.Console]` 中将 `Enabled` 设置为 `false`
 
+### 6. 翻译缓存
+
+- 翻译文件默认缓存在 `BepInEx\plugins\MuvluvMod\translation`，插件会根据翻译清单校验缓存并自动下载有更新的文件
+- 下载失败时会尝试使用已有缓存；需要重新下载全部翻译时，关闭游戏后删除该目录即可
+- 可通过 `MuvluvMod.cfg` 中的 `[Translation.Cache]` 修改缓存目录，或开启 `PreferLocalFiles` 优先使用本地翻译文件
+
 ---
 
 ## 快捷键

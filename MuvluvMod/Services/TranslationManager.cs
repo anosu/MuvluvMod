@@ -2,8 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
@@ -21,9 +19,7 @@ using NameTranslationTables = Dictionary<string, Dictionary<string, string>>;
 /// </summary>
 public sealed class TranslationManager
 {
-    private const string Language = "zh_Hans";
-
-    private readonly HttpClient _client;
+    private readonly TranslationCache _cache;
     private readonly FontHelper _font;
     private readonly MasterDataTranslator _masterDataTranslator = new();
     private readonly ConcurrentDictionary<long, Dictionary<string, string>> _scenes = new();
@@ -45,9 +41,9 @@ public sealed class TranslationManager
         Dictionary<string, Dictionary<string, string>>
     > MasterTranslations { get; private set; } = new MasterTranslationTables();
 
-    public TranslationManager(HttpClient client, FontHelper font)
+    internal TranslationManager(TranslationCache cache, FontHelper font)
     {
-        _client = client;
+        _cache = cache;
         _font = font;
     }
 
@@ -94,11 +90,8 @@ public sealed class TranslationManager
 
     private async Task LoadStaticTranslationsAsync()
     {
-        string cdn = GetCdn();
-        var namesTask = GetAsync<NameTranslationTables>($"{cdn}/translation/names/{Language}.json");
-        var masterTask = GetAsync<MasterTranslationTables>(
-            $"{cdn}/translation/static/{Language}.json"
-        );
+        var namesTask = _cache.LoadNamesAsync();
+        var masterTask = _cache.LoadStaticAsync();
 
         await Task.WhenAll(namesTask, masterTask).ConfigureAwait(false);
 
@@ -161,10 +154,7 @@ public sealed class TranslationManager
 
     private async Task LoadSceneTranslationAsync(long sceneId)
     {
-        var translations = await GetAsync<Dictionary<string, string>>(
-                $"{GetCdn()}/translation/scenes/{sceneId}/{Language}.json"
-            )
-            .ConfigureAwait(false);
+        var translations = await _cache.LoadSceneAsync(sceneId).ConfigureAwait(false);
 
         if (translations == null)
         {
@@ -175,29 +165,6 @@ public sealed class TranslationManager
 
         _scenes[sceneId] = translations;
         Logger.Info($"Scenario translation loaded [{sceneId}]. Entries: {translations.Count}");
-    }
-
-    private async Task<T> GetAsync<T>(string url)
-        where T : class
-    {
-        try
-        {
-            using var response = await _client.GetAsync(url).ConfigureAwait(false);
-            if (response.IsSuccessStatusCode)
-                return await response.Content.ReadFromJsonAsync<T>().ConfigureAwait(false);
-
-            Logger.Warn($"GET {url} {(int)response.StatusCode} {response.StatusCode}");
-        }
-        catch (TaskCanceledException)
-        {
-            Logger.Warn($"GET timed out: {url}");
-        }
-        catch (Exception e)
-        {
-            Logger.Error($"GET failed [{url}]: {e.Message}");
-        }
-
-        return null;
     }
 
     private void EnsureFallbackFontLoaded()
@@ -305,6 +272,4 @@ public sealed class TranslationManager
 
         return (filteredTables, entryCount, skippedIdentityCount, skippedEmptyCount);
     }
-
-    private static string GetCdn() => Config.TranslationCDN.Value.TrimEnd('/');
 }

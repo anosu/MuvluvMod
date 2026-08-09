@@ -50,6 +50,12 @@ This repository contains files intended for the **Windows DMM Game Player versio
 - See the relevant descriptions within the configuration files for specific options
 - To hide the console window, set `Enabled` to `false` under `[Logging.Console]` in `BepInEx.cfg`
 
+### 6. Translation cache
+
+- Translation files are cached in `BepInEx\plugins\MuvluvMod\translation` by default. The plugin verifies cached files against the translation manifest and downloads updates automatically
+- If a download fails, the plugin tries to use the existing cache. To download all translations again, close the game and delete this directory
+- The cache directory can be changed under `[Translation.Cache]` in `MuvluvMod.cfg`; enable `PreferLocalFiles` to prioritize local translation files
+
 ---
 
 ## Shortcut Keys

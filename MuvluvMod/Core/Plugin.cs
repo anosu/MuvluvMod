@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using BepInEx;
@@ -56,6 +57,10 @@ public class Plugin : BasePlugin
     {
         var handler = new SocketsHttpHandler
         {
+            AutomaticDecompression =
+                DecompressionMethods.GZip
+                | DecompressionMethods.Deflate
+                | DecompressionMethods.Brotli,
             PooledConnectionLifetime = TimeSpan.FromMinutes(PooledConnectionLifetimeMinutes),
             PooledConnectionIdleTimeout = TimeSpan.FromMinutes(PooledConnectionIdleTimeoutMinutes),
         };
@@ -68,14 +73,24 @@ public class Plugin : BasePlugin
             $"{MyPluginInfo.PLUGIN_GUID}/{MyPluginInfo.PLUGIN_VERSION}"
         );
 
-        string configuredPath = MuvluvMod.Config.FontBundlePath.Value;
-        string fontBundlePath = Path.IsPathRooted(configuredPath)
-            ? configuredPath
-            : Path.Combine(Paths.PluginPath, configuredPath);
+        string cacheDirectory = ResolvePluginPath(MuvluvMod.Config.TranslationCacheDirectory.Value);
+        var translationCache = new TranslationCache(
+            MuvluvMod.Config.TranslationCDN.Value,
+            cacheDirectory,
+            "zh_Hans",
+            MuvluvMod.Config.TranslationPreferLocalFiles.Value,
+            _httpClient
+        );
 
-        Trans = new TranslationManager(_httpClient, new FontHelper(fontBundlePath));
+        Trans = new TranslationManager(
+            translationCache,
+            new FontHelper(ResolvePluginPath(MuvluvMod.Config.FontBundlePath.Value))
+        );
         MissingSceneReporter = new MissingSceneReporter(_httpClient);
     }
+
+    private static string ResolvePluginPath(string path) =>
+        Path.IsPathRooted(path) ? path : Path.Combine(Paths.PluginPath, path);
 
     private static void TrySetUtf8Console()
     {

@@ -17,6 +17,8 @@ public static class Config
 
     public static ConfigEntry<bool> Translation { get; private set; }
     public static ConfigEntry<string> TranslationCDN { get; private set; }
+    public static ConfigEntry<string> TranslationCacheDirectory { get; private set; }
+    public static ConfigEntry<bool> TranslationPreferLocalFiles { get; private set; }
     public static ConfigEntry<string> FontBundlePath { get; private set; }
     public static ConfigEntry<bool> SubmitMissingScenes { get; private set; }
 
@@ -67,6 +69,18 @@ public static class Config
             "CdnURL",
             "https://raw.githubusercontent.com/anosu/muvluvgg-translation/refs/heads/main",
             "翻译加载的CDN"
+        );
+        TranslationCacheDirectory = config.Bind(
+            "Translation.Cache",
+            "Directory",
+            $"{MyPluginInfo.PLUGIN_GUID}/translation",
+            "翻译缓存目录，默认相对于插件目录，也可使用绝对路径；修改后重启生效"
+        );
+        TranslationPreferLocalFiles = config.Bind(
+            "Translation.Cache",
+            "PreferLocalFiles",
+            false,
+            "本地翻译文件存在时是否忽略清单哈希并优先使用本地文件（manifest除外）；修改后重启生效"
         );
         FontBundlePath = config.Bind(
             "Translation.Font",
