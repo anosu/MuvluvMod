@@ -78,10 +78,8 @@ public static class TranslationPatch
                     continue;
 
                 var configuration = JsonNode.Parse(frame.ConfigurationJson);
-                if (configuration?["Phrase"] is JsonObject phrase)
-                    TranslatePhrase(phrase, scene);
-
-                frame.ConfigurationJson = configuration?.ToJsonString() ?? frame.ConfigurationJson;
+                if (configuration?["Phrase"] is JsonObject phrase && TranslatePhrase(phrase, scene))
+                    frame.ConfigurationJson = configuration.ToJsonString();
             }
         }
         catch (Exception e)
@@ -90,14 +88,12 @@ public static class TranslationPatch
         }
     }
 
-    private static void TranslatePhrase(JsonObject phrase, Dictionary<string, string> scene)
-    {
-        TranslateJsonProperty(phrase, "SpeakerName", Plugin.Trans.Names);
-        TranslateJsonProperty(phrase, "TeamName", Plugin.Trans.TeamNames);
-        TranslateJsonProperty(phrase, "Text", scene);
-    }
+    private static bool TranslatePhrase(JsonObject phrase, Dictionary<string, string> scene) =>
+        TranslateJsonProperty(phrase, "SpeakerName", Plugin.Trans.Names)
+        | TranslateJsonProperty(phrase, "TeamName", Plugin.Trans.TeamNames)
+        | TranslateJsonProperty(phrase, "Text", scene);
 
-    private static void TranslateJsonProperty(
+    private static bool TranslateJsonProperty(
         JsonObject json,
         string name,
         IReadOnlyDictionary<string, string> translations
@@ -108,8 +104,14 @@ public static class TranslationPatch
             && node is JsonValue value
             && value.TryGetValue<string>(out var original)
             && translations.TryGetValue(original, out var translated)
+            && !string.Equals(original, translated, StringComparison.Ordinal)
         )
+        {
             json[name] = translated;
+            return true;
+        }
+
+        return false;
     }
 
     [HarmonyPrefix]

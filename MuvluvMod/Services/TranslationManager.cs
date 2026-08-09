@@ -28,9 +28,13 @@ public sealed class TranslationManager
     private readonly MasterDataTranslator _masterDataTranslator = new();
     private readonly ConcurrentDictionary<long, Dictionary<string, string>> _scenes = new();
     private readonly ConcurrentDictionary<long, Lazy<Task>> _sceneLoads = new();
-    private readonly Lazy<Task> _staticLoad;
+    private readonly object _staticLoadLock = new();
 
     private int _fontLoadStarted;
+    private Task _staticLoadTask;
+    private volatile bool _namesLoaded;
+    private volatile bool _masterTranslationsLoaded;
+    private volatile bool _staticTranslationsLoaded;
 
     public IReadOnlyDictionary<string, string> Names { get; private set; } =
         new Dictionary<string, string>();
@@ -45,7 +49,6 @@ public sealed class TranslationManager
     {
         _client = client;
         _font = font;
-        _staticLoad = new Lazy<Task>(LoadStaticTranslationsAsync);
     }
 
     public void Enable()
@@ -77,7 +80,16 @@ public sealed class TranslationManager
         if (!Config.Translation.Value)
             return Task.CompletedTask;
 
-        return _staticLoad.Value;
+        lock (_staticLoadLock)
+        {
+            if (
+                _staticLoadTask == null
+                || (_staticLoadTask.IsCompleted && !_staticTranslationsLoaded)
+            )
+                _staticLoadTask = LoadStaticTranslationsAsync();
+
+            return _staticLoadTask;
+        }
     }
 
     private async Task LoadStaticTranslationsAsync()
@@ -95,6 +107,7 @@ public sealed class TranslationManager
         {
             Names = GetTable(names, "speakerNames");
             TeamNames = GetTable(names, "teamNames");
+            _namesLoaded = true;
             Logger.Info($"Character names translation loaded. Total: {Names.Count}");
             Logger.Info($"Team names translation loaded. Total: {TeamNames.Count}");
         }
@@ -107,14 +120,23 @@ public sealed class TranslationManager
         var master = await masterTask.ConfigureAwait(false);
         if (master != null)
         {
-            MasterTranslations = master;
-            Logger.Info($"MasterData translation loaded. Types: {master.Count}");
+            var filtered = FilterMasterTranslations(master);
+            MasterTranslations = filtered.Tables;
+            _masterTranslationsLoaded = true;
+            Logger.Info(
+                $"MasterData translation loaded. Types: {filtered.Tables.Count}, "
+                    + $"Entries: {filtered.EntryCount}, "
+                    + $"Skipped identity entries: {filtered.SkippedIdentityCount}, "
+                    + $"Skipped empty entries: {filtered.SkippedEmptyCount}"
+            );
         }
         else
         {
             Logger.Warn("MasterData translation load failed");
             Toast.Warn("加载失败", "MasterData翻译加载失败");
         }
+
+        _staticTranslationsLoaded = _namesLoaded && _masterTranslationsLoaded;
     }
 
     private async Task EnsureSceneTranslationLoadedAsync(long sceneId)
@@ -228,6 +250,61 @@ public sealed class TranslationManager
         tables.TryGetValue(name, out var table) && table != null
             ? table
             : new Dictionary<string, string>();
+
+    private static (
+        MasterTranslationTables Tables,
+        int EntryCount,
+        int SkippedIdentityCount,
+        int SkippedEmptyCount
+    ) FilterMasterTranslations(MasterTranslationTables source)
+    {
+        var filteredTables = new MasterTranslationTables(source.Count);
+        int entryCount = 0;
+        int skippedIdentityCount = 0;
+        int skippedEmptyCount = 0;
+
+        foreach (var (typeName, propertyTables) in source)
+        {
+            if (propertyTables == null)
+                continue;
+
+            var filteredProperties = new Dictionary<string, Dictionary<string, string>>(
+                propertyTables.Count
+            );
+            foreach (var (path, translations) in propertyTables)
+            {
+                if (translations == null)
+                    continue;
+
+                var filteredTranslations = new Dictionary<string, string>(translations.Count);
+                foreach (var (original, translated) in translations)
+                {
+                    if (string.IsNullOrEmpty(translated))
+                    {
+                        skippedEmptyCount++;
+                        continue;
+                    }
+
+                    if (string.Equals(original, translated, StringComparison.Ordinal))
+                    {
+                        skippedIdentityCount++;
+                        continue;
+                    }
+
+                    filteredTranslations[original] = translated;
+                    entryCount++;
+                }
+
+                if (filteredTranslations.Count > 0)
+                    filteredProperties[path] = filteredTranslations;
+            }
+
+            if (filteredProperties.Count > 0)
+                filteredTables[typeName] = filteredProperties;
+        }
+
+        return (filteredTables, entryCount, skippedIdentityCount, skippedEmptyCount);
+    }
 
     private static string GetCdn() => Config.TranslationCDN.Value.TrimEnd('/');
 }
