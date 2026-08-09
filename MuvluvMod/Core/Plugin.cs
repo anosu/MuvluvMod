@@ -40,6 +40,8 @@ public class Plugin : BasePlugin
         Instance = AddComponent<Hotkey>();
 
         InitializeServices();
+        if (MuvluvMod.Config.CheckForUpdates.Value)
+            _ = UpdateChecker.CheckAsync(_httpClient, MyPluginInfo.PLUGIN_VERSION);
         MissingSceneReporter.Initialize();
         PatchManager.Initialize();
         Translations.Initialize();

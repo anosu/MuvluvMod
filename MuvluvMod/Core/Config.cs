@@ -14,6 +14,7 @@ public static class Config
     public static ConfigEntry<bool> EnableSkipButton { get; private set; }
     public static ConfigEntry<bool> VoiceInterruption { get; private set; }
     public static ConfigEntry<bool> AutoSkipBattle { get; private set; }
+    public static ConfigEntry<bool> CheckForUpdates { get; private set; }
 
     public static ConfigEntry<bool> TranslationEnabled { get; private set; }
     public static ConfigEntry<string> TranslationCdnUrl { get; private set; }
@@ -62,6 +63,12 @@ public static class Config
             "AutoSkipBattle",
             false,
             "自动跳过战斗（自动按跳过键，不受跳过键开关影响，默认关闭）"
+        );
+        CheckForUpdates = config.Bind(
+            "Update",
+            "CheckForUpdates",
+            true,
+            "启动时是否检查插件更新；修改后重启生效"
         );
 
         TranslationEnabled = config.Bind(
