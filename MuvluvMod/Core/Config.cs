@@ -15,8 +15,9 @@ public static class Config
     public static ConfigEntry<bool> VoiceInterruption { get; private set; }
     public static ConfigEntry<bool> AutoSkipBattle { get; private set; }
 
-    public static ConfigEntry<bool> Translation { get; private set; }
-    public static ConfigEntry<string> TranslationCDN { get; private set; }
+    public static ConfigEntry<bool> TranslationEnabled { get; private set; }
+    public static ConfigEntry<string> TranslationCdnUrl { get; private set; }
+    public static ConfigEntry<string> TranslationLanguage { get; private set; }
     public static ConfigEntry<string> TranslationCacheDirectory { get; private set; }
     public static ConfigEntry<bool> TranslationPreferLocalFiles { get; private set; }
     public static ConfigEntry<string> FontBundlePath { get; private set; }
@@ -63,12 +64,23 @@ public static class Config
             "自动跳过战斗（自动按跳过键，不受跳过键开关影响，默认关闭）"
         );
 
-        Translation = config.Bind("Translation", "Enable", true, "是否开启翻译");
-        TranslationCDN = config.Bind(
+        TranslationEnabled = config.Bind(
+            "Translation",
+            "Enable",
+            true,
+            "是否开启翻译；修改后重启生效"
+        );
+        TranslationCdnUrl = config.Bind(
             "Translation",
             "CdnURL",
             "https://raw.githubusercontent.com/anosu/muvluvgg-translation/refs/heads/main",
-            "翻译加载的CDN"
+            "翻译加载的CDN；修改后重启生效"
+        );
+        TranslationLanguage = config.Bind(
+            "Translation",
+            "Language",
+            "zh_Hans",
+            "翻译语言，目前支持：zh_Hans；修改后重启生效"
         );
         TranslationCacheDirectory = config.Bind(
             "Translation.Cache",
@@ -106,8 +118,5 @@ public static class Config
             $"[{setting.Definition.Section}]",
             $"{setting.Definition.Key} => {setting.BoxedValue}"
         );
-
-        if (ReferenceEquals(setting, Translation) && Translation.Value)
-            Plugin.Trans?.Enable();
     }
 }

@@ -21,12 +21,11 @@ public class Plugin : BasePlugin
     private const int HttpTimeoutSeconds = 10;
     private const int PooledConnectionLifetimeMinutes = 5;
     private const int PooledConnectionIdleTimeoutMinutes = 2;
-
     private HttpClient _httpClient;
 
     public static new ManualLogSource Log;
     public static MonoBehaviour Instance;
-    public static TranslationManager Trans;
+    public static TranslationManager Translations;
     public static MissingSceneReporter MissingSceneReporter;
 
     public override void Load()
@@ -43,7 +42,7 @@ public class Plugin : BasePlugin
         InitializeServices();
         MissingSceneReporter.Initialize();
         PatchManager.Initialize();
-        Trans.Enable();
+        Translations.Initialize();
 
         Logger.Info($"Plugin {MyPluginInfo.PLUGIN_GUID} loaded successfully");
 
@@ -75,14 +74,14 @@ public class Plugin : BasePlugin
 
         string cacheDirectory = ResolvePluginPath(MuvluvMod.Config.TranslationCacheDirectory.Value);
         var translationCache = new TranslationCache(
-            MuvluvMod.Config.TranslationCDN.Value,
+            MuvluvMod.Config.TranslationCdnUrl.Value,
             cacheDirectory,
-            "zh_Hans",
+            MuvluvMod.Config.TranslationLanguage.Value,
             MuvluvMod.Config.TranslationPreferLocalFiles.Value,
             _httpClient
         );
 
-        Trans = new TranslationManager(
+        Translations = new TranslationManager(
             translationCache,
             new FontHelper(ResolvePluginPath(MuvluvMod.Config.FontBundlePath.Value))
         );

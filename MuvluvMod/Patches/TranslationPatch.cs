@@ -25,28 +25,23 @@ public static class TranslationPatch
 {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(EpisodeService), nameof(EpisodeService.DownloadSceneFrameMasters))]
-    public static void PrepareTranslation(
-        EpisodeService __instance,
-        long sceneMasterId,
-        out Task __state
-    )
+    public static void BeginSceneTranslationLoad(long sceneMasterId, out Task __state)
     {
         Logger.Info($"Scene: {sceneMasterId}");
-        PatchManager.SetScene(sceneMasterId);
-        __instance?.sceneFrameMastersCache?.Remove(sceneMasterId);
+        PatchManager.SetCurrentScene(sceneMasterId);
 
-        if (!Config.Translation.Value || Plugin.Trans == null)
+        if (!Config.TranslationEnabled.Value || Plugin.Translations == null)
         {
             __state = null;
             return;
         }
 
-        __state = Plugin.Trans.EnsureSceneReadyAsync(sceneMasterId);
+        __state = Plugin.Translations.EnsureSceneTranslationsLoadedAsync(sceneMasterId);
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(EpisodeService), nameof(EpisodeService.DownloadSceneFrameMasters))]
-    public static void AwaitTranslation(
+    public static void WaitForSceneTranslation(
         long sceneMasterId,
         Task __state,
         ref UniTask<Il2CppReferenceArray<SceneFrameMaster>> __result
@@ -55,7 +50,7 @@ public static class TranslationPatch
         if (__state == null || Plugin.Instance == null)
             return;
 
-        __result = AwaitTranslation(
+        __result = WaitForTranslation(
             __result,
             __state,
             null,
@@ -65,9 +60,12 @@ public static class TranslationPatch
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ScenarioController), nameof(ScenarioController.GenerateFrames))]
-    public static void ReplaceTranslation(Il2CppReferenceArray<SceneFrameMaster> masters)
+    public static void TranslateFrames(Il2CppReferenceArray<SceneFrameMaster> masters)
     {
-        if (!PatchManager.TryGetCurrentScene(out var scene) || masters == null)
+        if (
+            !PatchManager.TryGetCurrentSceneTranslation(out var sceneTranslations)
+            || masters == null
+        )
             return;
 
         try
@@ -78,7 +76,10 @@ public static class TranslationPatch
                     continue;
 
                 var configuration = JsonNode.Parse(frame.ConfigurationJson);
-                if (configuration?["Phrase"] is JsonObject phrase && TranslatePhrase(phrase, scene))
+                if (
+                    configuration?["Phrase"] is JsonObject phrase
+                    && TranslatePhrase(phrase, sceneTranslations)
+                )
                     frame.ConfigurationJson = configuration.ToJsonString();
             }
         }
@@ -88,10 +89,13 @@ public static class TranslationPatch
         }
     }
 
-    private static bool TranslatePhrase(JsonObject phrase, Dictionary<string, string> scene) =>
-        TranslateJsonProperty(phrase, "SpeakerName", Plugin.Trans.Names)
-        | TranslateJsonProperty(phrase, "TeamName", Plugin.Trans.TeamNames)
-        | TranslateJsonProperty(phrase, "Text", scene);
+    private static bool TranslatePhrase(
+        JsonObject phrase,
+        Dictionary<string, string> sceneTranslations
+    ) =>
+        TranslateJsonProperty(phrase, "SpeakerName", Plugin.Translations.SpeakerNames)
+        | TranslateJsonProperty(phrase, "TeamName", Plugin.Translations.TeamNames)
+        | TranslateJsonProperty(phrase, "Text", sceneTranslations);
 
     private static bool TranslateJsonProperty(
         JsonObject json,
@@ -116,12 +120,12 @@ public static class TranslationPatch
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ScenarioHistoryCell), nameof(ScenarioHistoryCell.ApplyText))]
-    public static void ReplaceHistoryChoice(ref string phrase, bool isAnswer)
+    public static void TranslateHistoryChoice(ref string phrase, bool isAnswer)
     {
         if (
             isAnswer
-            && PatchManager.TryGetCurrentScene(out var scene)
-            && scene.TryGetValue(phrase, out var translatedText)
+            && PatchManager.TryGetCurrentSceneTranslation(out var sceneTranslations)
+            && sceneTranslations.TryGetValue(phrase, out var translatedText)
         )
             phrase = translatedText;
     }
@@ -131,25 +135,31 @@ public static class TranslationPatch
         typeof(ScenarioChoiceElementComponent),
         nameof(ScenarioChoiceElementComponent.Apply)
     )]
-    public static void ReplaceChoice(ScenarioChoiceElementComponent.Args args)
+    public static void TranslateChoice(ScenarioChoiceElementComponent.Args args)
     {
         if (
-            PatchManager.TryGetCurrentScene(out var scene)
-            && scene.TryGetValue(args.Text, out var translatedText)
+            PatchManager.TryGetCurrentSceneTranslation(out var sceneTranslations)
+            && sceneTranslations.TryGetValue(args.Text, out var translatedText)
         )
             args.Text = translatedText;
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(MemoryDB), nameof(MemoryDB.LoadMasterData))]
-    public static void ReplaceMasterData(ref UniTask<Il2CppReferenceArray<IDataObject>> __result)
+    public static void TranslateMasterDataAfterLoad(
+        ref UniTask<Il2CppReferenceArray<IDataObject>> __result
+    )
     {
-        if (!Config.Translation.Value || Plugin.Trans == null || Plugin.Instance == null)
+        if (
+            !Config.TranslationEnabled.Value
+            || Plugin.Translations == null
+            || Plugin.Instance == null
+        )
             return;
 
-        __result = AwaitTranslation(
+        __result = WaitForTranslation(
             __result,
-            Plugin.Trans.EnsureStaticTranslationsLoadedAsync(),
+            Plugin.Translations.EnsureSharedTranslationsLoadedAsync(),
             ApplyMasterDataTranslation,
             "MasterData translation"
         );
@@ -157,10 +167,10 @@ public static class TranslationPatch
 
     private static void ApplyMasterDataTranslation(Il2CppReferenceArray<IDataObject> masterData)
     {
-        if (Plugin.Trans.MasterTranslations.Count == 0)
+        if (Plugin.Translations.MasterDataTranslations.Count == 0)
             return;
 
-        var result = Plugin.Trans.TranslateMasterData(masterData);
+        var result = Plugin.Translations.TranslateMasterData(masterData);
         Logger.Info(
             $"MasterData translated. Objects: {masterData.Count}, "
                 + $"Matched: {result.MatchedObjects}, Fields: {result.TranslatedFields}"
@@ -173,7 +183,7 @@ public static class TranslationPatch
         }
     }
 
-    private static UniTask<T> AwaitTranslation<T>(
+    private static UniTask<T> WaitForTranslation<T>(
         UniTask<T> sourceTask,
         Task translationTask,
         Action<T> applyTranslation,
@@ -217,14 +227,8 @@ public static class TranslationPatch
             yield break;
         }
 
-        while (!translationTask.IsCompleted && Config.Translation.Value)
+        while (!translationTask.IsCompleted)
             yield return null;
-
-        if (!Config.Translation.Value)
-        {
-            completion.TrySetResult(result);
-            yield break;
-        }
 
         try
         {

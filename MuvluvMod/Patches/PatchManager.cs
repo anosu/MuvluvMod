@@ -10,7 +10,7 @@ public static class PatchManager
 {
     private static Harmony _harmony;
 
-    public static long SceneId { get; private set; }
+    public static long CurrentSceneId { get; private set; }
     public static bool IsPlayingScenario { get; private set; }
 
     public static void Initialize()
@@ -33,15 +33,15 @@ public static class PatchManager
         Logger.Info("Harmony patches removed");
     }
 
-    public static void SetScene(long sceneId) => SceneId = sceneId;
+    public static void SetCurrentScene(long sceneId) => CurrentSceneId = sceneId;
 
     public static void SetScenarioPlaying(bool playing) => IsPlayingScenario = playing;
 
-    public static bool TryGetCurrentScene(out Dictionary<string, string> translation)
+    public static bool TryGetCurrentSceneTranslation(out Dictionary<string, string> translation)
     {
         translation = null;
-        return Config.Translation.Value
-            && Plugin.Trans != null
-            && Plugin.Trans.TryGetScene(SceneId, out translation);
+        return Config.TranslationEnabled.Value
+            && Plugin.Translations != null
+            && Plugin.Translations.TryGetSceneTranslation(CurrentSceneId, out translation);
     }
 }

@@ -18,7 +18,7 @@ internal static class FontPatch
         if (
             __instance == null
             || !string.Equals(__instance.name, GameFontName, StringComparison.Ordinal)
-            || !Config.Translation.Value
+            || !Config.TranslationEnabled.Value
         )
             return true;
 

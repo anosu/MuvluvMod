@@ -11,22 +11,26 @@ internal static class TranslationPaths
     public const string Manifest = "manifest";
     public const string Names = "names";
     public const string Scenes = "scenes";
-    public const string Static = "static";
+    public const string MasterData = "static";
 
-    public static string BuildRelativePath(string type, string language, string id = null) =>
-        type switch
+    public static string BuildRelativePath(
+        string category,
+        string language,
+        string resourceId = null
+    ) =>
+        category switch
         {
-            Scenes when id == null => throw new ArgumentException(
+            Scenes when resourceId == null => throw new ArgumentException(
                 "Scene ID is required for scene translations",
-                nameof(id)
+                nameof(resourceId)
             ),
-            Scenes => $"{Scenes}/{id}/{language}.json",
-            _ => $"{type}/{language}.json",
+            Scenes => $"{Scenes}/{resourceId}/{language}.json",
+            _ => $"{category}/{language}.json",
         };
 
-    public static string BuildRemoteUrl(string cdn, string relativePath) =>
-        $"{cdn.TrimEnd('/')}/translation/{relativePath}";
+    public static string BuildDownloadUrl(string cdnBaseUrl, string relativePath) =>
+        $"{cdnBaseUrl.TrimEnd('/')}/translation/{relativePath}";
 
-    public static string BuildCachePath(string cacheDirectory, string relativePath) =>
-        Path.Combine(cacheDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
+    public static string BuildLocalPath(string cacheRootDirectory, string relativePath) =>
+        Path.Combine(cacheRootDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
 }

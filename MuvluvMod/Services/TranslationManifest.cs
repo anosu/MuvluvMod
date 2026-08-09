@@ -9,14 +9,14 @@ namespace MuvluvMod.Services;
 internal sealed class TranslationManifest
 {
     [JsonPropertyName("hash")]
-    public string Hash { get; set; }
+    public string ContentHash { get; set; }
 
     [JsonPropertyName("names")]
-    public string Names { get; set; }
+    public string NamesHash { get; set; }
 
     [JsonPropertyName("scenes")]
-    public Dictionary<string, string> Scenes { get; set; }
+    public Dictionary<string, string> SceneHashes { get; set; }
 
     [JsonPropertyName("static")]
-    public string Static { get; set; }
+    public string MasterDataHash { get; set; }
 }

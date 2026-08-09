@@ -19,142 +19,148 @@ using NameTranslationTables = Dictionary<string, Dictionary<string, string>>;
 /// </summary>
 public sealed class TranslationManager
 {
-    private readonly TranslationCache _cache;
-    private readonly FontHelper _font;
+    private readonly TranslationCache _translationCache;
+    private readonly FontHelper _fallbackFont;
     private readonly MasterDataTranslator _masterDataTranslator = new();
-    private readonly ConcurrentDictionary<long, Dictionary<string, string>> _scenes = new();
-    private readonly ConcurrentDictionary<long, Lazy<Task>> _sceneLoads = new();
-    private readonly object _staticLoadLock = new();
+    private readonly ConcurrentDictionary<long, Dictionary<string, string>> _sceneTranslations =
+        new();
+    private readonly ConcurrentDictionary<long, Lazy<Task>> _pendingSceneLoads = new();
+    private readonly object _sharedTranslationsLoadLock = new();
 
     private int _fontLoadStarted;
-    private Task _staticLoadTask;
-    private volatile bool _namesLoaded;
-    private volatile bool _masterTranslationsLoaded;
-    private volatile bool _staticTranslationsLoaded;
+    private Task _sharedTranslationsLoadTask;
+    private volatile bool _sharedTranslationsLoaded;
 
-    public IReadOnlyDictionary<string, string> Names { get; private set; } =
+    public IReadOnlyDictionary<string, string> SpeakerNames { get; private set; } =
         new Dictionary<string, string>();
     public IReadOnlyDictionary<string, string> TeamNames { get; private set; } =
         new Dictionary<string, string>();
     public IReadOnlyDictionary<
         string,
         Dictionary<string, Dictionary<string, string>>
-    > MasterTranslations { get; private set; } = new MasterTranslationTables();
+    > MasterDataTranslations { get; private set; } = new MasterTranslationTables();
 
-    internal TranslationManager(TranslationCache cache, FontHelper font)
+    internal TranslationManager(TranslationCache translationCache, FontHelper fallbackFont)
     {
-        _cache = cache;
-        _font = font;
+        _translationCache = translationCache;
+        _fallbackFont = fallbackFont;
     }
 
-    public void Enable()
+    public void Initialize()
     {
-        if (!Config.Translation.Value)
+        if (!Config.TranslationEnabled.Value)
             return;
 
-        _ = EnsureStaticTranslationsLoadedAsync();
-        EnsureFallbackFontLoaded();
+        _ = EnsureSharedTranslationsLoadedAsync();
+        StartFallbackFontLoad();
     }
 
-    public bool TryGetScene(long sceneId, out Dictionary<string, string> translation) =>
-        _scenes.TryGetValue(sceneId, out translation);
+    public bool TryGetSceneTranslation(long sceneId, out Dictionary<string, string> translation) =>
+        _sceneTranslations.TryGetValue(sceneId, out translation);
 
-    public MasterDataTranslationResult TranslateMasterData(
-        System.Collections.IEnumerable objects
-    ) => _masterDataTranslator.Translate(objects, MasterTranslations);
+    public MasterDataTranslationResult TranslateMasterData(IEnumerable objects) =>
+        _masterDataTranslator.Translate(objects, MasterDataTranslations);
 
-    public Task EnsureSceneReadyAsync(long sceneId)
+    public Task EnsureSceneTranslationsLoadedAsync(long sceneId)
     {
-        var staticTask = EnsureStaticTranslationsLoadedAsync();
-        return _scenes.ContainsKey(sceneId)
-            ? staticTask
-            : Task.WhenAll(staticTask, EnsureSceneTranslationLoadedAsync(sceneId));
+        var sharedTranslationsTask = EnsureSharedTranslationsLoadedAsync();
+        return _sceneTranslations.ContainsKey(sceneId)
+            ? sharedTranslationsTask
+            : Task.WhenAll(sharedTranslationsTask, EnsureSceneTranslationLoadedAsync(sceneId));
     }
 
-    public Task EnsureStaticTranslationsLoadedAsync()
+    public Task EnsureSharedTranslationsLoadedAsync()
     {
-        if (!Config.Translation.Value)
+        if (!Config.TranslationEnabled.Value)
             return Task.CompletedTask;
 
-        lock (_staticLoadLock)
+        lock (_sharedTranslationsLoadLock)
         {
             if (
-                _staticLoadTask == null
-                || (_staticLoadTask.IsCompleted && !_staticTranslationsLoaded)
+                _sharedTranslationsLoadTask == null
+                || (_sharedTranslationsLoadTask.IsCompleted && !_sharedTranslationsLoaded)
             )
-                _staticLoadTask = LoadStaticTranslationsAsync();
+                _sharedTranslationsLoadTask = LoadSharedTranslationsAsync();
 
-            return _staticLoadTask;
+            return _sharedTranslationsLoadTask;
         }
     }
 
-    private async Task LoadStaticTranslationsAsync()
+    private async Task LoadSharedTranslationsAsync()
     {
-        var namesTask = _cache.LoadNamesAsync();
-        var masterTask = _cache.LoadStaticAsync();
+        var namesTask = _translationCache.LoadNameTranslationsAsync();
+        var masterDataTask = _translationCache.LoadMasterDataTranslationsAsync();
 
-        await Task.WhenAll(namesTask, masterTask).ConfigureAwait(false);
+        await Task.WhenAll(namesTask, masterDataTask).ConfigureAwait(false);
 
-        var names = await namesTask.ConfigureAwait(false);
-        if (names != null)
-        {
-            Names = GetTable(names, "speakerNames");
-            TeamNames = GetTable(names, "teamNames");
-            _namesLoaded = true;
-            Logger.Info($"Character names translation loaded. Total: {Names.Count}");
-            Logger.Info($"Team names translation loaded. Total: {TeamNames.Count}");
-        }
-        else
+        bool namesLoaded = ApplyNameTranslations(await namesTask.ConfigureAwait(false));
+        bool masterDataLoaded = ApplyMasterDataTranslations(
+            await masterDataTask.ConfigureAwait(false)
+        );
+        _sharedTranslationsLoaded = namesLoaded && masterDataLoaded;
+    }
+
+    private bool ApplyNameTranslations(NameTranslationTables tables)
+    {
+        if (tables == null || tables.Count == 0)
         {
             Logger.Warn("Names translation load failed");
             Toast.Warn("加载失败", "角色名称翻译加载失败");
+            return false;
         }
 
-        var master = await masterTask.ConfigureAwait(false);
-        if (master != null)
-        {
-            var filtered = FilterMasterTranslations(master);
-            MasterTranslations = filtered.Tables;
-            _masterTranslationsLoaded = true;
-            Logger.Info(
-                $"MasterData translation loaded. Types: {filtered.Tables.Count}, "
-                    + $"Entries: {filtered.EntryCount}, "
-                    + $"Skipped identity entries: {filtered.SkippedIdentityCount}, "
-                    + $"Skipped empty entries: {filtered.SkippedEmptyCount}"
-            );
-        }
-        else
+        SpeakerNames = GetNameTable(tables, "speakerNames");
+        TeamNames = GetNameTable(tables, "teamNames");
+        Logger.Info($"Character names translation loaded. Total: {SpeakerNames.Count}");
+        Logger.Info($"Team names translation loaded. Total: {TeamNames.Count}");
+        return true;
+    }
+
+    private bool ApplyMasterDataTranslations(MasterTranslationTables tables)
+    {
+        if (tables == null || tables.Count == 0)
         {
             Logger.Warn("MasterData translation load failed");
             Toast.Warn("加载失败", "MasterData翻译加载失败");
+            return false;
         }
 
-        _staticTranslationsLoaded = _namesLoaded && _masterTranslationsLoaded;
+        var filtered = FilterMasterDataTranslations(tables);
+        MasterDataTranslations = filtered.Tables;
+        Logger.Info(
+            $"MasterData translation loaded. Types: {filtered.Tables.Count}, "
+                + $"Entries: {filtered.EntryCount}, "
+                + $"Skipped identity entries: {filtered.SkippedIdentityCount}, "
+                + $"Skipped empty entries: {filtered.SkippedEmptyCount}"
+        );
+        return true;
     }
 
     private async Task EnsureSceneTranslationLoadedAsync(long sceneId)
     {
-        if (_scenes.ContainsKey(sceneId))
+        if (_sceneTranslations.ContainsKey(sceneId))
             return;
 
-        var lazy = _sceneLoads.GetOrAdd(
+        var pendingLoad = _pendingSceneLoads.GetOrAdd(
             sceneId,
             id => new Lazy<Task>(() => LoadSceneTranslationAsync(id))
         );
 
         try
         {
-            await lazy.Value.ConfigureAwait(false);
+            await pendingLoad.Value.ConfigureAwait(false);
         }
         finally
         {
-            _sceneLoads.TryRemove(sceneId, out _);
+            _pendingSceneLoads.TryRemove(sceneId, out _);
         }
     }
 
     private async Task LoadSceneTranslationAsync(long sceneId)
     {
-        var translations = await _cache.LoadSceneAsync(sceneId).ConfigureAwait(false);
+        var translations = await _translationCache
+            .LoadSceneTranslationsAsync(sceneId)
+            .ConfigureAwait(false);
 
         if (translations == null)
         {
@@ -163,21 +169,21 @@ public sealed class TranslationManager
             return;
         }
 
-        _scenes[sceneId] = translations;
+        _sceneTranslations[sceneId] = translations;
         Logger.Info($"Scenario translation loaded [{sceneId}]. Entries: {translations.Count}");
     }
 
-    private void EnsureFallbackFontLoaded()
+    private void StartFallbackFontLoad()
     {
         if (Plugin.Instance == null || Interlocked.Exchange(ref _fontLoadStarted, 1) != 0)
             return;
 
-        Plugin.Instance.StartCoroutine(LoadFallbackFont().WrapToIl2Cpp());
+        Plugin.Instance.StartCoroutine(LoadFallbackFontCoroutine().WrapToIl2Cpp());
     }
 
-    private IEnumerator LoadFallbackFont()
+    private IEnumerator LoadFallbackFontCoroutine()
     {
-        var loader = _font.LoadAsync();
+        var loader = _fallbackFont.LoadAsync();
         while (true)
         {
             object current;
@@ -197,20 +203,20 @@ public sealed class TranslationManager
             yield return current;
         }
 
-        if (!_font.Valid)
+        if (!_fallbackFont.Valid)
         {
             Logger.Error("Font load failed: loaded asset is invalid");
             Toast.Error("字体加载失败", "字体资源无效");
             yield break;
         }
 
-        if (!TMP_Settings.fallbackFontAssets.Contains(_font.Asset))
-            TMP_Settings.fallbackFontAssets.Add(_font.Asset);
+        if (!TMP_Settings.fallbackFontAssets.Contains(_fallbackFont.Asset))
+            TMP_Settings.fallbackFontAssets.Add(_fallbackFont.Asset);
 
-        Logger.Info($"Fallback font registered: {_font.Asset.name}");
+        Logger.Info($"Fallback font registered: {_fallbackFont.Asset.name}");
     }
 
-    private static IReadOnlyDictionary<string, string> GetTable(
+    private static IReadOnlyDictionary<string, string> GetNameTable(
         NameTranslationTables tables,
         string name
     ) =>
@@ -223,7 +229,7 @@ public sealed class TranslationManager
         int EntryCount,
         int SkippedIdentityCount,
         int SkippedEmptyCount
-    ) FilterMasterTranslations(MasterTranslationTables source)
+    ) FilterMasterDataTranslations(MasterTranslationTables source)
     {
         var filteredTables = new MasterTranslationTables(source.Count);
         int entryCount = 0;
