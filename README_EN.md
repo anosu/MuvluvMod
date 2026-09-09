@@ -1,5 +1,7 @@
 # MuvluvMod
 
+For development setup, Utility source references, and CSharpier formatting, see the [build guide (Chinese)](docs/BUILDING.md).
+
 This repository contains files intended for the **Windows DMM Game Player version** of the game client.
 
 ---

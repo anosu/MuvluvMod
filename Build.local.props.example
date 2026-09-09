@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <GameDir>D:/Games/muv_luv_girlsgardenx_cl</GameDir>
+    <!-- Optional: use a separate directory containing PC BepInEx interop DLLs. -->
+    <!-- <GameInteropDir>D:/Interop/muv_luv_girlsgardenx_cl</GameInteropDir> -->
+  </PropertyGroup>
+</Project>

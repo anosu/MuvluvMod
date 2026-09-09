@@ -1,10 +1,10 @@
-using BepInEx.Unity.IL2CPP.Utils.Collections;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using BepInEx.Unity.IL2CPP.Utils.Collections;
 using TMPro;
 using Utility.Assets;
 using Utility.Notifications;
@@ -40,7 +40,10 @@ public sealed class TranslationManager
         Dictionary<string, Dictionary<string, string>>
     > MasterDataTranslations { get; private set; } = new MasterTranslationTables();
 
-    internal TranslationManager(TranslationCache translationCache, AssetBundleLoader<TMP_FontAsset> fallbackFont)
+    internal TranslationManager(
+        TranslationCache translationCache,
+        AssetBundleLoader<TMP_FontAsset> fallbackFont
+    )
     {
         _translationCache = translationCache;
         _fallbackFont = fallbackFont;

@@ -4,6 +4,8 @@
 
 本仓库的文件适用于 **Windows 平台 DMM Game Player 版本**的游戏客户端
 
+开发环境、Utility 源码引用和代码格式化见 [构建说明](docs/BUILDING.md)。
+
 ---
 
 ## 功能特性
