@@ -1,5 +1,5 @@
 using BepInEx.Configuration;
-using Utility.Toast;
+using Utility.Notifications;
 
 namespace MuvluvMod;
 

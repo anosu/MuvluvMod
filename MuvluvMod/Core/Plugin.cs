@@ -9,9 +9,10 @@ using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using MuvluvMod.Patches;
 using MuvluvMod.Services;
+using TMPro;
 using UnityEngine;
-using Utility.Fonts;
-using Utility.Toast;
+using Utility.Assets;
+using Utility.Notifications;
 
 namespace MuvluvMod;
 
@@ -35,7 +36,7 @@ public class Plugin : BasePlugin
         Log = base.Log;
         Logger.Info($"Plugin {MyPluginInfo.PLUGIN_GUID} is loading");
 
-        AddComponent<ToastUI>();
+        Toast.Initialize();
         MuvluvMod.Config.Initialize(base.Config);
         Instance = AddComponent<Hotkey>();
 
@@ -85,7 +86,7 @@ public class Plugin : BasePlugin
 
         Translations = new TranslationManager(
             translationCache,
-            new FontHelper(ResolvePluginPath(MuvluvMod.Config.FontBundlePath.Value))
+            new AssetBundleLoader<TMP_FontAsset>(ResolvePluginPath(MuvluvMod.Config.FontBundlePath.Value))
         );
         MissingSceneReporter = new MissingSceneReporter(_httpClient);
     }

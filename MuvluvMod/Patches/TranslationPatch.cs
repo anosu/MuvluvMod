@@ -13,7 +13,7 @@ using BepInEx.Unity.IL2CPP.Utils;
 using Cysharp.Threading.Tasks;
 using HarmonyLib;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
-using Utility.Toast;
+using Utility.Notifications;
 
 namespace MuvluvMod.Patches;
 
@@ -179,7 +179,7 @@ public static class TranslationPatch
         if (result.MatchedObjects > 0 && result.TranslatedFields == 0)
         {
             Logger.Warn("MasterData translation matched objects but changed no fields");
-            Toast.Warn("MasterData翻译", "已匹配数据类型，但没有字段被翻译");
+            Toast.Warning("MasterData翻译", "已匹配数据类型，但没有字段被翻译");
         }
     }
 

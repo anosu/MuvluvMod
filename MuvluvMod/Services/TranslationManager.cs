@@ -1,13 +1,13 @@
+using BepInEx.Unity.IL2CPP.Utils.Collections;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using BepInEx.Unity.IL2CPP.Utils.Collections;
 using TMPro;
-using Utility.Fonts;
-using Utility.Toast;
+using Utility.Assets;
+using Utility.Notifications;
 
 namespace MuvluvMod.Services;
 
@@ -20,7 +20,7 @@ using NameTranslationTables = Dictionary<string, Dictionary<string, string>>;
 public sealed class TranslationManager
 {
     private readonly TranslationCache _translationCache;
-    private readonly FontHelper _fallbackFont;
+    private readonly AssetBundleLoader<TMP_FontAsset> _fallbackFont;
     private readonly MasterDataTranslator _masterDataTranslator = new();
     private readonly ConcurrentDictionary<long, Dictionary<string, string>> _sceneTranslations =
         new();
@@ -40,7 +40,7 @@ public sealed class TranslationManager
         Dictionary<string, Dictionary<string, string>>
     > MasterDataTranslations { get; private set; } = new MasterTranslationTables();
 
-    internal TranslationManager(TranslationCache translationCache, FontHelper fallbackFont)
+    internal TranslationManager(TranslationCache translationCache, AssetBundleLoader<TMP_FontAsset> fallbackFont)
     {
         _translationCache = translationCache;
         _fallbackFont = fallbackFont;
@@ -105,7 +105,7 @@ public sealed class TranslationManager
         if (tables == null || tables.Count == 0)
         {
             Logger.Warn("Names translation load failed");
-            Toast.Warn("加载失败", "角色名称翻译加载失败");
+            Toast.Warning("加载失败", "角色名称翻译加载失败");
             return false;
         }
 
@@ -121,7 +121,7 @@ public sealed class TranslationManager
         if (tables == null || tables.Count == 0)
         {
             Logger.Warn("MasterData translation load failed");
-            Toast.Warn("加载失败", "MasterData翻译加载失败");
+            Toast.Warning("加载失败", "MasterData翻译加载失败");
             return false;
         }
 
@@ -165,7 +165,7 @@ public sealed class TranslationManager
         if (translations == null)
         {
             Logger.Warn($"Scenario translation load failed: {sceneId}");
-            Toast.Warn("加载失败", $"剧本ID: {sceneId}");
+            Toast.Warning("加载失败", $"剧本ID: {sceneId}");
             return;
         }
 
@@ -183,7 +183,7 @@ public sealed class TranslationManager
 
     private IEnumerator LoadFallbackFontCoroutine()
     {
-        var loader = _fallbackFont.LoadAsync();
+        var loader = _fallbackFont.Load();
         while (true)
         {
             object current;
@@ -203,7 +203,7 @@ public sealed class TranslationManager
             yield return current;
         }
 
-        if (!_fallbackFont.Valid)
+        if (!_fallbackFont.IsLoaded)
         {
             Logger.Error("Font load failed: loaded asset is invalid");
             Toast.Error("字体加载失败", "字体资源无效");

@@ -1,7 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Utility.Toast;
+using Utility.Notifications;
 
 namespace MuvluvMod.Services;
 
