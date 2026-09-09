@@ -86,7 +86,9 @@ public class Plugin : BasePlugin
 
         Translations = new TranslationManager(
             translationCache,
-            new AssetBundleLoader<TMP_FontAsset>(ResolvePluginPath(MuvluvMod.Config.FontBundlePath.Value))
+            new AssetBundleLoader<TMP_FontAsset>(
+                ResolvePluginPath(MuvluvMod.Config.FontBundlePath.Value)
+            )
         );
         MissingSceneReporter = new MissingSceneReporter(_httpClient);
     }

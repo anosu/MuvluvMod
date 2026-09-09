@@ -1,56 +1,49 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+    <Import Project="../build/PcBuild.props" />
+    <Import Project="../build/SharedDependencies.props" />
 
-  <PropertyGroup>
-    <!-- Per-user path. Set GameDir to override it on another machine. -->
-    <GameDir Condition="'$(GameDir)' == ''">E:\Games\DMM GAMES\muv_luv_girlsgardenx_cl</GameDir>
-    <Authors>Jitsu</Authors>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Authors>Jitsu</Authors>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>MuvluvMod</AssemblyName>
-    <Product>MuvluvMod</Product>
-    <Version>1.2.0</Version>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>latest</LangVersion>
-    <RestoreAdditionalProjectSources>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <AssemblyName>MuvluvMod</AssemblyName>
+        <Product>MuvluvMod</Product>
+        <Version>1.2.0</Version>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>latest</LangVersion>
+        <RestoreAdditionalProjectSources>
       https://api.nuget.org/v3/index.json;
       https://nuget.bepinex.dev/v3/index.json;
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <RootNamespace>MuvluvMod</RootNamespace>
-    <BaseOutputPath>$(GameDir)\BepInEx\plugins\$(Product)</BaseOutputPath>
-    <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
-  </PropertyGroup>
+        <RootNamespace>MuvluvMod</RootNamespace>
+        <BaseOutputPath>$(GameDir)\BepInEx\plugins\$(Product)</BaseOutputPath>
+        <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DebugType>none</DebugType>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <DebugType>none</DebugType>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DebugType>none</DebugType>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+        <DebugType>none</DebugType>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- Resolve Utility.dll from the sibling project or the deployed plugin directory. -->
-    <UtilityDll Condition="Exists('..\..\Utility\Utility\bin\Release\net6.0\Utility.dll')">..\..\Utility\Utility\bin\Release\net6.0\Utility.dll</UtilityDll>
-    <UtilityDll Condition="'$(UtilityDll)' == '' And Exists('$(BaseOutputPath)\Utility.dll')">$(BaseOutputPath)\Utility.dll</UtilityDll>
-  </PropertyGroup>
+    <ItemGroup>
+        <GameDlls Include="$(GameInteropDir)/*.dll" />
+        <Reference Include="@(GameDlls)">
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
 
-  <ItemGroup>
-    <GameDlls Include="$(GameDir)\BepInEx\interop\*.dll">
-    </GameDlls>
-    <Reference Include="@(GameDlls)">
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Utility">
-      <HintPath>$(UtilityDll)</HintPath>
-      <Private>True</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" IncludeAssets="compile" />
-    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference
+            Include="BepInEx.Unity.IL2CPP"
+            Version="6.0.0-be.*"
+            IncludeAssets="compile"
+        />
+        <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+    </ItemGroup>
 </Project>
