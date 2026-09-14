@@ -4,7 +4,7 @@
 
 本仓库的文件适用于 **Windows 平台 DMM Game Player 版本**的游戏客户端
 
-开发环境、Utility 源码引用和代码格式化见 [构建说明](docs/BUILDING.md)。
+开发环境、Utility 源码引用和代码格式化见 [构建说明](https://github.com/anosu/ModEngineering/blob/main/docs/CONVENTIONS.md)。
 
 ---
 
@@ -77,6 +77,6 @@
 - 使用本插件可能会影响游戏的正常运行，作者不对因使用本插件导致的任何问题（包括但不限于封号、数据丢失、程序崩溃）负责
 - 下载与使用本插件即视为您已同意自行承担相关风险
 
-## 统一工程入口
+## 开发
 
-源码已迁移到 `src/`，独立测试位于 `tests/`。构建、VS 联调和发布方式以 [docs/BUILDING.md](docs/BUILDING.md) 为准；项目差异配置在 `mod.json`，公共实现来自固定的 `shared/ModEngineering`。
+源码位于 `src/`，测试位于 `tests/`。项目配置由 `.csproj` 管理，依赖版本由 Git 子模块记录。构建、VS 联调和发布命令见[公共工程说明](https://github.com/anosu/ModEngineering/blob/main/docs/CONVENTIONS.md)。

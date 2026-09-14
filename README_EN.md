@@ -1,6 +1,6 @@
 # MuvluvMod
 
-For development setup, Utility source references, and CSharpier formatting, see the [build guide (Chinese)](docs/BUILDING.md).
+For development setup, Utility source references, and CSharpier formatting, see the [build guide (Chinese)](https://github.com/anosu/ModEngineering/blob/main/docs/CONVENTIONS.md).
 
 This repository contains files intended for the **Windows DMM Game Player version** of the game client.
 
