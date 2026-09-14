@@ -5,7 +5,9 @@
   "kind": "pc",
   "assembly": "MuvluvMod",
   "project": "src/MuvluvMod/MuvluvMod.csproj",
-  "tests": [],
+  "tests": [
+    "tests/MuvluvMod.Cache.Tests/MuvluvMod.Cache.Tests.csproj"
+  ],
   "deployDirectory": "BepInEx/plugins/MuvluvMod/{configuration}/net6.0",
   "engineeringRevision": "350e407a5aca296a47b7a5935e884fce77c6ea5c"
 }

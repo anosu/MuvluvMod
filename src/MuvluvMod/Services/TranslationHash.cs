@@ -1,9 +1,6 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace MuvluvMod.Services;
 
@@ -15,8 +12,6 @@ using NameTranslationTables = Dictionary<string, Dictionary<string, string>>;
 /// </summary>
 internal static class TranslationHash
 {
-    private static readonly byte[] EntrySeparator = { 0 };
-    private static readonly Encoding Utf8 = new UTF8Encoding(false);
     private static readonly IComparer<string> KeyComparer = new UnicodeCodePointComparer();
 
     public static string ComputeScene(Dictionary<string, string> translations) =>
@@ -72,42 +67,8 @@ internal static class TranslationHash
         }
     }
 
-    private static string Compute(IEnumerable<(string Key, string Value)> entries)
-    {
-        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
-        foreach (var (key, value) in entries)
-        {
-            AppendUtf8(hash, key);
-            hash.AppendData(EntrySeparator);
-            AppendUtf8(hash, value);
-            hash.AppendData(EntrySeparator);
-        }
-
-        return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
-    }
-
-    private static void AppendUtf8(IncrementalHash hash, string value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return;
-
-        int byteCount = Utf8.GetByteCount(value);
-        byte[] rented = null;
-        Span<byte> buffer =
-            byteCount <= 512
-                ? stackalloc byte[byteCount]
-                : (rented = ArrayPool<byte>.Shared.Rent(byteCount));
-        try
-        {
-            int written = Utf8.GetBytes(value.AsSpan(), buffer);
-            hash.AppendData(buffer[..written]);
-        }
-        finally
-        {
-            if (rented != null)
-                ArrayPool<byte>.Shared.Return(rented);
-        }
-    }
+    private static string Compute(IEnumerable<(string Key, string Value)> entries) =>
+        Utility.Cryptography.StringTableHash.ComputeEntries(entries);
 
     private sealed class UnicodeCodePointComparer : IComparer<string>
     {

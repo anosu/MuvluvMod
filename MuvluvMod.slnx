@@ -1,4 +1,5 @@
 <Solution>
     <Project Path="src/MuvluvMod/MuvluvMod.csproj" />
+    <Project Path="tests/MuvluvMod.Cache.Tests/MuvluvMod.Cache.Tests.csproj" />
     <Project Path="shared/Utility/src/Utility/Utility.csproj" />
 </Solution>
