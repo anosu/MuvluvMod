@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "repository": "MuvluvMod",
+  "github": "anosu/MuvluvMod",
+  "kind": "pc",
+  "assembly": "MuvluvMod",
+  "project": "src/MuvluvMod/MuvluvMod.csproj",
+  "tests": [],
+  "useExtension": false,
+  "deployDirectory": "BepInEx/plugins/MuvluvMod/{configuration}/net6.0",
+  "engineeringRevision": "0b038f40808e29dcd31c2de5df14f2f37953ca34"
+}
