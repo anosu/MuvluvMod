@@ -28,7 +28,7 @@ public static class MissingScenePatch
             if (Plugin.MissingSceneReporter == null || !TryGetSceneId(url, out var sceneId))
                 return;
 
-            Plugin.MissingSceneReporter.SubmitIfMissing(sceneId, url);
+            _ = Plugin.MissingSceneReporter.SubmitIfMissingAsync(sceneId, url);
         }
         catch (Exception e)
         {

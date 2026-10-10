@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Utility.Caching;
 
@@ -20,6 +21,7 @@ internal sealed class TranslationCache
     private readonly string _language;
     private readonly bool _preferLocalFiles;
     private readonly JsonResourceCache _resources;
+    private readonly CancellationToken _cancellationToken;
     private readonly object _manifestLoadLock = new();
 
     private Task _manifestLoadTask;
@@ -30,13 +32,15 @@ internal sealed class TranslationCache
         string cacheRootDirectory,
         string language,
         bool preferLocalFiles,
-        HttpClient httpClient
+        HttpClient httpClient,
+        CancellationToken cancellationToken = default
     )
     {
         _cdnBaseUrl = cdnBaseUrl.TrimEnd('/');
         _cacheRootDirectory = cacheRootDirectory;
         _language = ValidateLanguage(language);
         _preferLocalFiles = preferLocalFiles;
+        _cancellationToken = cancellationToken;
         // Explicit callback parameter types avoid nullable metadata from the Unity proxy's incomplete attribute.
         _resources = new JsonResourceCache(
             httpClient,
@@ -81,10 +85,15 @@ internal sealed class TranslationCache
         string downloadUrl = TranslationPaths.BuildDownloadUrl(_cdnBaseUrl, relativePath);
         string cachePath = TranslationPaths.BuildLocalPath(_cacheRootDirectory, relativePath);
         var previous = await _resources
-            .LoadLocalAsync<TranslationManifest>(cachePath)
+            .LoadLocalAsync<TranslationManifest>(cachePath, _cancellationToken)
             .ConfigureAwait(false);
         _manifest = await _resources
-            .RefreshAsync<TranslationManifest>(relativePath, cachePath, downloadUrl)
+            .RefreshAsync<TranslationManifest>(
+                relativePath,
+                cachePath,
+                downloadUrl,
+                cancellationToken: _cancellationToken
+            )
             .ConfigureAwait(false);
         if (_manifest != null)
         {
@@ -127,7 +136,8 @@ internal sealed class TranslationCache
                             computeHash(value),
                             expectedHash,
                             StringComparison.OrdinalIgnoreCase
-                        )
+                        ),
+                _cancellationToken
             )
             .ConfigureAwait(false);
     }

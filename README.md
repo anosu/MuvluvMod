@@ -50,8 +50,10 @@
 - 首次运行后会在 `BepInEx\config` 文件夹生成：
     - `BepInEx.cfg`（BepInEx 配置）
     - `MuvluvMod.cfg`（插件配置，可用于关闭翻译等）
-- 修改配置后需重启游戏生效
-- 具体配置项自行查看配置文件内相关说明
+- 可安装 [anosu/BepInEx.ConfigurationManager](https://github.com/anosu/BepInEx.ConfigurationManager) 的 IL2CPP 版本，将发行包中的 `ConfigurationManager.dll` 和 `BepInEx.KeyboardShortcut.dll` 一起放入 `BepInEx/plugins`，按 **F1** 打开配置窗口。
+- 窗口中的文本在按 Enter、失去焦点或关闭窗口时提交，Escape 放弃当前草稿。资源地址、缓存目录、字体和缺失剧本提交位于高级设置。
+- 配置键及默认值保持兼容。CDN 只接受 HTTP/HTTPS 地址；资源值去除首尾空格，无效地址或空路径回退默认值。所有变更记入日志，只有布尔开关弹出提示。
+- 战斗和语音开关按配置说明即时或在下次触发时生效。开启翻译会在主线程加载字体并预加载数据，影响后续载入的剧情及主数据；已注入的译文需重启才能还原。CDN、语言、缓存策略、字体和更新检查需重启生效。直接修改配置文件时请重启游戏。
 - 如需隐藏控制台窗口，请在 `BepInEx.cfg` 的 `[Logging.Console]` 中将 `Enabled` 设置为 `false`
 
 ### 6. 翻译缓存
@@ -80,3 +82,7 @@
 ## 开发
 
 源码位于 `src/`，测试位于 `tests/`。项目配置由 `.csproj` 管理，依赖版本由 Git 子模块记录。构建、VS 联调和发布命令见[公共工程说明](https://github.com/anosu/ModEngineering/blob/main/docs/CONVENTIONS.md)。
+
+`Core` 定义配置、装配依赖并管理字体和 HTTP 生命周期；配置校验器及 ConfigurationManager 标准标签留在此处。`Patches` 负责游戏对象、剧情状态和加载等待，`Services` 处理翻译缓存和缺失剧本提交，通过显式依赖获取配置。翻译管理不再持有字体或协程。游戏加载结果仍由协程转交时拒绝卸载，其余后台请求在卸载时统一取消。
+
+运行 `python shared/ModEngineering/scripts/project.py test` 验证缓存策略、旧配置兼容、值校验、请求取消、提交开关及等待期间关闭翻译。主数据在实际写入前重新读取开关，关闭翻译仍会正常交回游戏加载结果。测试使用真实 BepInEx 配置类、模拟 HTTP 响应及游戏调度替身，不连接外部服务。游戏内字体、剧情加载和语音补丁需实际运行验证。

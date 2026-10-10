@@ -1,17 +1,13 @@
-using System.Collections.Generic;
 using HarmonyLib;
 
 namespace MuvluvMod.Patches;
 
 /// <summary>
-/// Registers Harmony patches and owns shared scenario state.
+/// Registers Harmony patches and prevents unloading during wrapped game loads.
 /// </summary>
 public static class PatchManager
 {
     private static Harmony _harmony;
-
-    public static long CurrentSceneId { get; private set; }
-    public static bool IsPlayingScenario { get; private set; }
 
     public static void Initialize()
     {
@@ -23,25 +19,18 @@ public static class PatchManager
         Logger.Info("Harmony patches applied");
     }
 
-    public static void Shutdown()
+    public static bool Shutdown()
     {
+        if (TranslationPatch.HasPendingLoads)
+            return false;
         if (_harmony == null)
-            return;
+            return true;
 
         _harmony.UnpatchSelf();
         _harmony = null;
+        TranslationPatch.Reset();
+        EnhancePatch.Reset();
         Logger.Info("Harmony patches removed");
-    }
-
-    public static void SetCurrentScene(long sceneId) => CurrentSceneId = sceneId;
-
-    public static void SetScenarioPlaying(bool playing) => IsPlayingScenario = playing;
-
-    public static bool TryGetCurrentSceneTranslation(out Dictionary<string, string> translation)
-    {
-        translation = null;
-        return Config.TranslationEnabled.Value
-            && Plugin.Translations != null
-            && Plugin.Translations.TryGetSceneTranslation(CurrentSceneId, out translation);
+        return true;
     }
 }

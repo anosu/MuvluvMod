@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Utility.Notifications;
 
@@ -13,14 +14,19 @@ internal static class UpdateChecker
     private const string LatestReleaseUrl = "https://github.com/anosu/MuvluvMod/releases/latest";
     private const string ReleaseTagPath = "/releases/tag/";
 
-    public static async Task CheckAsync(HttpClient httpClient, string currentVersion)
+    public static async Task CheckAsync(
+        HttpClient httpClient,
+        string currentVersion,
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Head, LatestReleaseUrl);
             using var response = await httpClient
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                 .ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!response.IsSuccessStatusCode)
             {
                 Logger.Warn(
@@ -51,7 +57,8 @@ internal static class UpdateChecker
             );
             Toast.Info("发现新版本", $"最新版本：{latestVersion}");
         }
-        catch (TaskCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException)
         {
             Logger.Warn("Update check timed out");
         }

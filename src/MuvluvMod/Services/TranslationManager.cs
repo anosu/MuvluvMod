@@ -2,11 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
-using BepInEx.Unity.IL2CPP.Utils.Collections;
-using TMPro;
-using Utility.Assets;
 using Utility.Notifications;
 
 namespace MuvluvMod.Services;
@@ -15,19 +11,17 @@ using MasterTranslationTables = Dictionary<string, Dictionary<string, Dictionary
 using NameTranslationTables = Dictionary<string, Dictionary<string, string>>;
 
 /// <summary>
-/// Coordinates translation downloads, in-memory caching, and font loading.
+/// Coordinates translation downloads, in-memory caching, and master-data translation.
 /// </summary>
-public sealed class TranslationManager
+internal sealed class TranslationManager
 {
     private readonly TranslationCache _translationCache;
-    private readonly AssetBundleLoader<TMP_FontAsset> _fallbackFont;
     private readonly MasterDataTranslator _masterDataTranslator = new();
     private readonly ConcurrentDictionary<long, Dictionary<string, string>> _sceneTranslations =
         new();
     private readonly ConcurrentDictionary<long, Lazy<Task>> _pendingSceneLoads = new();
     private readonly object _sharedTranslationsLoadLock = new();
 
-    private int _fontLoadStarted;
     private Task _sharedTranslationsLoadTask;
     private volatile bool _sharedTranslationsLoaded;
 
@@ -40,22 +34,9 @@ public sealed class TranslationManager
         Dictionary<string, Dictionary<string, string>>
     > MasterDataTranslations { get; private set; } = new MasterTranslationTables();
 
-    internal TranslationManager(
-        TranslationCache translationCache,
-        AssetBundleLoader<TMP_FontAsset> fallbackFont
-    )
+    internal TranslationManager(TranslationCache translationCache)
     {
         _translationCache = translationCache;
-        _fallbackFont = fallbackFont;
-    }
-
-    public void Initialize()
-    {
-        if (!Config.TranslationEnabled.Value)
-            return;
-
-        _ = EnsureSharedTranslationsLoadedAsync();
-        StartFallbackFontLoad();
     }
 
     public bool TryGetSceneTranslation(long sceneId, out Dictionary<string, string> translation) =>
@@ -74,9 +55,6 @@ public sealed class TranslationManager
 
     public Task EnsureSharedTranslationsLoadedAsync()
     {
-        if (!Config.TranslationEnabled.Value)
-            return Task.CompletedTask;
-
         lock (_sharedTranslationsLoadLock)
         {
             if (
@@ -94,7 +72,14 @@ public sealed class TranslationManager
         var namesTask = _translationCache.LoadNameTranslationsAsync();
         var masterDataTask = _translationCache.LoadMasterDataTranslationsAsync();
 
-        await Task.WhenAll(namesTask, masterDataTask).ConfigureAwait(false);
+        try
+        {
+            await Task.WhenAll(namesTask, masterDataTask).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
 
         bool namesLoaded = ApplyNameTranslations(await namesTask.ConfigureAwait(false));
         bool masterDataLoaded = ApplyMasterDataTranslations(
@@ -155,15 +140,25 @@ public sealed class TranslationManager
         }
         finally
         {
-            _pendingSceneLoads.TryRemove(sceneId, out _);
+            ((ICollection<KeyValuePair<long, Lazy<Task>>>)_pendingSceneLoads).Remove(
+                new(sceneId, pendingLoad)
+            );
         }
     }
 
     private async Task LoadSceneTranslationAsync(long sceneId)
     {
-        var translations = await _translationCache
-            .LoadSceneTranslationsAsync(sceneId)
-            .ConfigureAwait(false);
+        Dictionary<string, string> translations;
+        try
+        {
+            translations = await _translationCache
+                .LoadSceneTranslationsAsync(sceneId)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
 
         if (translations == null)
         {
@@ -174,49 +169,6 @@ public sealed class TranslationManager
 
         _sceneTranslations[sceneId] = translations;
         Logger.Info($"Scenario translation loaded [{sceneId}]. Entries: {translations.Count}");
-    }
-
-    private void StartFallbackFontLoad()
-    {
-        if (Plugin.Instance == null || Interlocked.Exchange(ref _fontLoadStarted, 1) != 0)
-            return;
-
-        Plugin.Instance.StartCoroutine(LoadFallbackFontCoroutine().WrapToIl2Cpp());
-    }
-
-    private IEnumerator LoadFallbackFontCoroutine()
-    {
-        var loader = _fallbackFont.Load();
-        while (true)
-        {
-            object current;
-            try
-            {
-                if (!loader.MoveNext())
-                    break;
-                current = loader.Current;
-            }
-            catch (Exception e)
-            {
-                Logger.Error($"Font load failed: {e.Message}");
-                Toast.Error("字体加载失败", e.Message);
-                yield break;
-            }
-
-            yield return current;
-        }
-
-        if (!_fallbackFont.IsLoaded)
-        {
-            Logger.Error("Font load failed: loaded asset is invalid");
-            Toast.Error("字体加载失败", "字体资源无效");
-            yield break;
-        }
-
-        if (!TMP_Settings.fallbackFontAssets.Contains(_fallbackFont.Asset))
-            TMP_Settings.fallbackFontAssets.Add(_fallbackFont.Asset);
-
-        Logger.Info($"Fallback font registered: {_fallbackFont.Asset.name}");
     }
 
     private static IReadOnlyDictionary<string, string> GetNameTable(

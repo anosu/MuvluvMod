@@ -13,6 +13,10 @@ namespace MuvluvMod.Patches;
 [HarmonyPatch]
 public static class EnhancePatch
 {
+    private static bool _isPlayingScenario;
+
+    internal static void Reset() => _isPlayingScenario = false;
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(MosaicRendererFeature), nameof(MosaicRendererFeature.Create))]
     public static void ConfigureMosaic(MosaicRendererFeature __instance)
@@ -35,13 +39,13 @@ public static class EnhancePatch
     [HarmonyPrefix]
     [HarmonyPatch(typeof(AudioManager), nameof(AudioManager.StopVoice))]
     public static bool ConfigureVoiceInterruption() =>
-        Config.VoiceInterruption.Value || !PatchManager.IsPlayingScenario;
+        Config.VoiceInterruption.Value || !_isPlayingScenario;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ScenarioController), nameof(ScenarioController.Refresh), [])]
-    public static void BeginScenario() => PatchManager.SetScenarioPlaying(true);
+    public static void BeginScenario() => _isPlayingScenario = true;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ScenarioController), nameof(ScenarioController.Leave))]
-    public static void EndScenario() => PatchManager.SetScenarioPlaying(false);
+    public static void EndScenario() => _isPlayingScenario = false;
 }

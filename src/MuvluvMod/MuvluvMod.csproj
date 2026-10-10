@@ -9,26 +9,14 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <AssemblyName>MuvluvMod</AssemblyName>
-        <Product>MuvluvMod</Product>
         <Version>1.2.0</Version>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
+        <DebugType>none</DebugType>
         <RestoreAdditionalProjectSources>
       https://api.nuget.org/v3/index.json;
       https://nuget.bepinex.dev/v3/index.json;
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-        <RootNamespace>MuvluvMod</RootNamespace>
-        <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <DebugType>none</DebugType>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <DebugType>none</DebugType>
     </PropertyGroup>
 
     <ItemGroup>

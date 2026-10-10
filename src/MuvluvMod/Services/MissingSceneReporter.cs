@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MuvluvMod.Services;
@@ -12,26 +13,34 @@ namespace MuvluvMod.Services;
 /// <summary>
 /// Loads untranslated scene IDs and submits their resolved data-source URLs.
 /// </summary>
-public sealed class MissingSceneReporter
+internal sealed class MissingSceneReporter
 {
     private const string MissingScenesUrl = "https://api.ntr.best/debug/muvluvgg/scenes/missing";
     private const string SubmitSceneUrl = "https://api.ntr.best/debug/muvluvgg/scenes/submit";
 
     private readonly HttpClient _client;
+    private readonly Func<bool> _isEnabled;
+    private readonly CancellationToken _cancellationToken;
     private readonly object _loadLock = new();
     private readonly ConcurrentDictionary<long, byte> _missingSceneIds = new();
     private readonly ConcurrentDictionary<long, Lazy<Task>> _submissions = new();
 
     private Task _loadTask;
 
-    public MissingSceneReporter(HttpClient client)
+    public MissingSceneReporter(
+        HttpClient client,
+        Func<bool> isEnabled,
+        CancellationToken cancellationToken = default
+    )
     {
         _client = client;
+        _isEnabled = isEnabled;
+        _cancellationToken = cancellationToken;
     }
 
     public void Initialize()
     {
-        if (Config.SubmitMissingScenes.Value)
+        if (_isEnabled())
         {
             Logger.Info("Missing scene reporting enabled; loading scene list");
             _ = EnsureMissingScenesLoadedAsync();
@@ -44,25 +53,11 @@ public sealed class MissingSceneReporter
 
     public bool ShouldCapture(long sceneId)
     {
-        if (!Config.SubmitMissingScenes.Value)
+        if (_cancellationToken.IsCancellationRequested || !_isEnabled())
             return false;
 
         var loadTask = EnsureMissingScenesLoadedAsync();
         return !loadTask.IsCompleted || _missingSceneIds.ContainsKey(sceneId);
-    }
-
-    public void SubmitIfMissing(long sceneId, string sceneUrl)
-    {
-        if (!ShouldCapture(sceneId))
-            return;
-
-        if (!IsValidSceneUrl(sceneUrl))
-        {
-            Logger.Warn($"Missing scene URL is invalid [{sceneId}]");
-            return;
-        }
-
-        _ = SubmitIfMissingAsync(sceneId, sceneUrl.Trim());
     }
 
     private Task EnsureMissingScenesLoadedAsync()
@@ -77,7 +72,9 @@ public sealed class MissingSceneReporter
     {
         try
         {
-            using var response = await _client.GetAsync(MissingScenesUrl).ConfigureAwait(false);
+            using var response = await _client
+                .GetAsync(MissingScenesUrl, _cancellationToken)
+                .ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 Logger.Warn(
@@ -87,7 +84,9 @@ public sealed class MissingSceneReporter
             }
 
             var scenes = await response
-                .Content.ReadFromJsonAsync<List<MissingScene>>()
+                .Content.ReadFromJsonAsync<List<MissingScene>>(
+                    cancellationToken: _cancellationToken
+                )
                 .ConfigureAwait(false);
             if (scenes == null)
             {
@@ -100,7 +99,8 @@ public sealed class MissingSceneReporter
 
             Logger.Info($"Missing scene list loaded. Total: {_missingSceneIds.Count}");
         }
-        catch (TaskCanceledException)
+        catch (OperationCanceledException) when (_cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException)
         {
             Logger.Warn("Missing scene list request timed out");
         }
@@ -110,15 +110,26 @@ public sealed class MissingSceneReporter
         }
     }
 
-    private async Task SubmitIfMissingAsync(long sceneId, string sceneUrl)
+    public async Task SubmitIfMissingAsync(long sceneId, string sceneUrl)
     {
+        if (!ShouldCapture(sceneId))
+            return;
+        if (!IsValidSceneUrl(sceneUrl))
+        {
+            Logger.Warn($"Missing scene URL is invalid [{sceneId}]");
+            return;
+        }
         await EnsureMissingScenesLoadedAsync().ConfigureAwait(false);
-        if (!_missingSceneIds.ContainsKey(sceneId))
+        if (
+            _cancellationToken.IsCancellationRequested
+            || !_isEnabled()
+            || !_missingSceneIds.ContainsKey(sceneId)
+        )
             return;
 
         var lazy = _submissions.GetOrAdd(
             sceneId,
-            id => new Lazy<Task>(() => SubmitCoreAsync(id, sceneUrl))
+            id => new Lazy<Task>(() => SubmitCoreAsync(id, sceneUrl.Trim()))
         );
 
         try
@@ -127,10 +138,7 @@ public sealed class MissingSceneReporter
         }
         finally
         {
-            if (
-                _submissions.TryGetValue(sceneId, out var current) && ReferenceEquals(current, lazy)
-            )
-                _submissions.TryRemove(sceneId, out _);
+            ((ICollection<KeyValuePair<long, Lazy<Task>>>)_submissions).Remove(new(sceneId, lazy));
         }
     }
 
@@ -140,7 +148,7 @@ public sealed class MissingSceneReporter
         {
             var payload = new SceneSubmission { Id = sceneId, Url = sceneUrl };
             using var response = await _client
-                .PostAsJsonAsync(SubmitSceneUrl, payload)
+                .PostAsJsonAsync(SubmitSceneUrl, payload, _cancellationToken)
                 .ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.Conflict)
@@ -157,7 +165,8 @@ public sealed class MissingSceneReporter
                     + $"{(int)response.StatusCode} {response.StatusCode}"
             );
         }
-        catch (TaskCanceledException)
+        catch (OperationCanceledException) when (_cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException)
         {
             Logger.Warn($"Missing scene submission timed out: {sceneId}");
         }

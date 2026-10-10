@@ -3,8 +3,18 @@
         <TargetFramework>net8.0</TargetFramework>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
+        <RestoreAdditionalProjectSources>https://nuget.bepinex.dev/v3/index.json</RestoreAdditionalProjectSources>
     </PropertyGroup>
     <ItemGroup>
+        <Compile
+            Include="../../src/MuvluvMod/Patches/TranslationPatch.cs"
+            Link="Production/TranslationPatch.cs"
+        />
+        <Compile
+            Include="../../src/MuvluvMod/Core/Config.cs;../../src/MuvluvMod/Core/Acceptable*.cs;../../src/MuvluvMod/Core/ConfigurationManagerAttributes.cs;../../src/MuvluvMod/Services/MissingSceneReporter.cs"
+            Link="Production/%(Filename)%(Extension)"
+        />
+        <PackageReference Include="BepInEx.Core" Version="$(BepInExVersion)" />
         <Compile
             Include="../../shared/Utility/src/Utility/Caching/*.cs;../../shared/Utility/src/Utility/Cryptography/*.cs"
             Link="Shared/%(Filename)%(Extension)"

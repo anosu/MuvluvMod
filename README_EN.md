@@ -48,8 +48,10 @@ This repository contains files intended for the **Windows DMM Game Player versio
 - After the first run, the following files will be generated in the `BepInEx\config` folder:
     - `BepInEx.cfg` (BepInEx configuration)
     - `MuvluvMod.cfg` (plugin configuration, can be used to disable translation, etc.)
-- Changes to the configuration require a game restart to take effect
-- See the relevant descriptions within the configuration files for specific options
+- Install the IL2CPP release of [anosu/BepInEx.ConfigurationManager](https://github.com/anosu/BepInEx.ConfigurationManager), placing both `ConfigurationManager.dll` and `BepInEx.KeyboardShortcut.dll` in `BepInEx/plugins`. Press **F1** to open its settings window.
+- Text edits are committed on Enter, focus loss, or window close; Escape discards the current draft. Resource paths, cache options, fonts, and missing-scene reporting appear under advanced settings.
+- Existing keys and defaults are preserved. Resource values are trimmed; invalid HTTP/HTTPS URLs and empty paths fall back to defaults. All changes are logged; only Boolean switches produce a notification.
+- Battle and voice settings apply immediately or on their next trigger, as described in each setting. Enabling translation preloads data and fonts for subsequently loaded scenes and master data. Restart to restore text already translated, or to apply CDN, language, cache, font, and update-check changes. Restart after editing the configuration file directly.
 - To hide the console window, set `Enabled` to `false` under `[Logging.Console]` in `BepInEx.cfg`
 
 ### 6. Translation cache
@@ -74,3 +76,9 @@ This repository contains files intended for the **Windows DMM Game Player versio
 - This plugin is intended for learning and technical research purposes only. Please use it **in compliance with all applicable laws and regulations**
 - Using this plugin may affect normal game operation. The author assumes no responsibility for any issues arising from its use (including but not limited to account bans, data loss, or program crashes)
 - By downloading and using this plugin, you agree that you do so at your own risk
+
+## Development
+
+`Core` owns configuration and resource lifetime, `Patches` handles game objects and loading coroutines, and `Services` handles translation data through explicit dependencies. Unloading is refused while a coroutine is responsible for completing a game load; other background requests are canceled on unload.
+
+Run `python shared/ModEngineering/scripts/project.py test` for cache, configuration compatibility, validation, cancellation, and reporting-switch tests. These use real BepInEx configuration classes and simulated HTTP responses. Fonts, rendering, and game hooks require in-game verification.
